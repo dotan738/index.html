@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="description" content="מידע חיוני – לוח בקרה אישי לנתוני בריאות וכושר, בעברית, עם סנכרון מ-Google Fit">
+<title>מידע חיוני</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%A4%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f1f5f9; --surface:#ffffff; --surface-2:#f8fafc; --line:#e2e8f0;
+  --text:#0f172a; --muted:#64748b; --faint:#94a3b8;
+  --brand:#0f766e; --brand-2:#14b8a6; --brand-soft:#ccfbf1;
+  --accent:#4f46e5; --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:16px;
+  --c-steps:#0ea5e9; --c-calories:#f97316; --c-distance:#8b5cf6; --c-active:#eab308;
+  --c-heart:#ef4444; --c-sleep:#6366f1; --c-weight:#0f766e; --c-bp:#e11d48;
+  --c-glucose:#a16207; --c-spo2:#0891b2; --c-water:#3b82f6; --c-fat:#db2777;
+}
+html[data-theme="dark"]{
+  --bg:#0b1220; --surface:#111a2b; --surface-2:#16223a; --line:#23324d;
+  --text:#e8eefc; --muted:#94a3b8; --faint:#64748b;
+  --brand:#2dd4bf; --brand-2:#14b8a6; --brand-soft:#0f3d38;
+  --accent:#818cf8;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  font-family:'Heebo',system-ui,'Segoe UI',Arial,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:96px;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:var(--brand);text-underline-offset:3px}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+header.top{
+  background:linear-gradient(135deg,#0f766e 0%,#155e75 55%,#1e3a8a 100%);
+  color:#fff; padding:18px 0 22px; position:relative; overflow:hidden;
+}
+header.top::after{
+  content:'';position:absolute;inset:auto -60px -90px auto;width:260px;height:260px;
+  background:radial-gradient(circle,rgba(255,255,255,.16),transparent 65%);border-radius:50%;
+}
+.top-row{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.brand-mark{
+  width:44px;height:44px;border-radius:14px;flex:0 0 auto;
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+  display:flex;align-items:center;justify-content:center;font-size:1.35rem;
+}
+.brand-txt h1{font-size:1.25rem;font-weight:900;letter-spacing:-.02em}
+.brand-txt p{font-size:.78rem;opacity:.8;margin-top:1px}
+.top-actions{margin-inline-start:auto;display:flex;gap:8px}
+.icon-btn{
+  width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:1rem;
+  transition:background .15s;
+}
+.icon-btn:hover{background:rgba(255,255,255,.26)}
+.sync-strip{
+  position:relative;z-index:1;margin-top:14px;display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  border-radius:12px;padding:9px 12px;font-size:.82rem;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:#facc15;flex:0 0 auto}
+.dot.on{background:#4ade80} .dot.off{background:#f87171}
+.sync-strip .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini-btn{
+  background:rgba(255,255,255,.9);color:#0f766e;font-weight:700;font-size:.78rem;
+  padding:6px 12px;border-radius:9px;white-space:nowrap;
+}
+.mini-btn:hover{background:#fff}
+
+/* ---------- Tabs ---------- */
+nav.tabs{
+  position:sticky;top:0;z-index:60;background:var(--surface);
+  border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.04);
+}
+.tabs-inner{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs-inner::-webkit-scrollbar{display:none}
+.tab{
+  padding:13px 14px;font-size:.9rem;font-weight:700;color:var(--muted);
+  border-bottom:3px solid transparent;white-space:nowrap;transition:color .15s;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+main{padding-top:20px}
+.view{display:none;animation:fade .22s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- Common ---------- */
+.section-head{display:flex;align-items:center;gap:10px;margin:22px 0 12px}
+.section-head h2{font-size:1.02rem;font-weight:900}
+.section-head .hint{font-size:.78rem;color:var(--muted);margin-inline-start:auto}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;
+}
+.range-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:4px}
+.chip{
+  padding:7px 14px;border-radius:999px;font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--line);color:var(--muted);
+}
+.chip.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{
+  padding:10px 16px;border-radius:11px;font-size:.88rem;font-weight:700;
+  background:var(--brand);color:#fff;transition:filter .15s;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+label.fld{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:5px}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:11px;
+  background:var(--surface-2);outline:none;transition:border-color .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--brand)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note{
+  font-size:.82rem;line-height:1.65;color:var(--muted);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+}
+.note.warn{border-color:#fcd34d;background:#fffbeb;color:#78350f}
+html[data-theme="dark"] .note.warn{background:#2b2210;border-color:#78500f;color:#fde68a}
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty .big{font-size:2.6rem;margin-bottom:10px}
+.empty h3{font-size:1rem;color:var(--text);margin-bottom:6px}
+
+/* ---------- Metric cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.metric{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:14px;position:relative;overflow:hidden;
+  text-align:start;transition:transform .15s,box-shadow .15s;
+}
+.metric:hover{transform:translateY(-2px)}
+.metric::before{content:'';position:absolute;inset-block:0;inset-inline-start:0;width:4px;background:var(--mc,var(--brand))}
+.metric .m-top{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.metric .m-ico{font-size:1.05rem}
+.metric .m-name{font-size:.8rem;font-weight:700;color:var(--muted)}
+.metric .m-val{font-size:1.72rem;font-weight:900;line-height:1.1;letter-spacing:-.02em}
+.metric .m-val bdi{white-space:nowrap}
+.metric .m-unit{font-size:.76rem;font-weight:700;color:var(--faint);margin-inline-start:4px}
+.metric .m-sub{font-size:.74rem;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:5px}
+.trend{font-weight:800;font-size:.74rem;padding:1px 6px;border-radius:6px}
+.trend.up{color:var(--ok);background:rgba(22,163,74,.1)}
+.trend.down{color:var(--bad);background:rgba(220,38,38,.1)}
+.trend.flat{color:var(--muted);background:var(--surface-2)}
+.spark{display:block;width:100%;height:34px;margin-top:10px}
+
+/* ---------- Goal ring ---------- */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.ring-wrap{position:relative;width:124px;height:124px;flex:0 0 auto}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-txt .n{font-size:1.5rem;font-weight:900;line-height:1}
+.ring-txt .l{font-size:.7rem;color:var(--muted);margin-top:2px}
+.hero-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:12px}
+.fact .k{font-size:.74rem;color:var(--muted);font-weight:700}
+.fact .v{font-size:1.12rem;font-weight:900;margin-top:2px}
+
+/* ---------- Charts ---------- */
+.chart-card{margin-bottom:12px}
+.chart-head{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.chart-head h3{font-size:.92rem;font-weight:800}
+.chart-head .sub{font-size:.76rem;color:var(--muted);margin-inline-start:auto}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font-size:10px;fill:var(--faint);font-family:inherit}
+.chart .grid-line{stroke:var(--line);stroke-width:1}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:.76rem;color:var(--muted)}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-inline-end:5px;vertical-align:-1px}
+
+/* ---------- Table ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:520px}
+th,td{padding:10px 12px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--surface-2);font-weight:800;font-size:.78rem;color:var(--muted);position:sticky;top:0}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface-2)}
+.src-tag{font-size:.68rem;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.src-tag.fit{background:var(--brand-soft);color:var(--brand);border-color:transparent}
+.src-tag.manual{background:rgba(79,70,229,.12);color:var(--accent);border-color:transparent}
+.src-tag.import{background:rgba(234,179,8,.15);color:#a16207;border-color:transparent}
+.row-del{color:var(--bad);font-weight:800;font-size:.8rem}
+
+/* ---------- Toast / modal ---------- */
+#toast{
+  position:fixed;inset-block-end:22px;inset-inline:16px;z-index:200;
+  display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;
+}
+.toast{
+  background:var(--text);color:var(--bg);padding:11px 18px;border-radius:12px;
+  font-size:.86rem;font-weight:700;box-shadow:var(--shadow);max-width:92vw;text-align:center;
+  animation:pop .2s ease;
+}
+.toast.err{background:var(--bad);color:#fff}
+.toast.ok{background:var(--ok);color:#fff}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.drop{
+  border:2px dashed var(--line);border-radius:14px;padding:28px 16px;text-align:center;
+  color:var(--muted);font-size:.86rem;transition:border-color .15s,background .15s;
+}
+.drop.hot{border-color:var(--brand);background:var(--brand-soft)}
+.drop .big{font-size:2rem;display:block;margin-bottom:8px}
+details.acc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2);margin-top:10px}
+details.acc summary{font-weight:800;font-size:.86rem;cursor:pointer}
+details.acc .body{margin-top:10px;font-size:.82rem;line-height:1.75;color:var(--muted)}
+details.acc code{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:.8em;direction:ltr;display:inline-block}
+ol,ul{padding-inline-start:20px}
+li{margin-bottom:5px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted);font-weight:700}
+.kv .v{font-weight:800}
+@media(max-width:640px){
+  .hero{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .hero-facts{width:100%}
+  .metric .m-val{font-size:1.5rem}
+  .grid-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand-mark">❤️</div>
+      <div class="brand-txt">
+        <h1>מידע חיוני</h1>
+        <p id="todayLine">לוח הבריאות האישי שלי</p>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeBtn" title="מצב כהה / בהיר" aria-label="החלפת ערכת נושא">🌙</button>
+        <button class="icon-btn" id="syncBtn" title="סנכרון מ-Google Fit" aria-label="סנכרון">🔄</button>
+      </div>
+    </div>
+    <div class="sync-strip">
+      <span class="dot off" id="syncDot"></span>
+      <span class="grow" id="syncText">לא מחובר ל-Google Fit</span>
+      <button class="mini-btn" id="connectBtn">חיבור</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="wrap">
+    <div class="tabs-inner" role="tablist">
+      <button class="tab active" data-view="dash" role="tab">לוח מחוונים</button>
+      <button class="tab" data-view="trends" role="tab">מגמות</button>
+      <button class="tab" data-view="log" role="tab">יומן</button>
+      <button class="tab" data-view="sync" role="tab">סנכרון וייבוא</button>
+      <button class="tab" data-view="settings" role="tab">הגדרות</button>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ לוח מחוונים ============ -->
+  <section class="view active" id="view-dash">
+    <div class="range-bar" id="rangeBar">
+      <button class="chip" data-days="1">היום</button>
+      <button class="chip active" data-days="7">7 ימים</button>
+      <button class="chip" data-days="30">30 יום</button>
+      <button class="chip" data-days="90">90 יום</button>
+      <button class="chip" data-days="365">שנה</button>
+    </div>
+
+    <div class="section-head">
+      <h2>סיכום התקופה</h2>
+      <span class="hint" id="rangeHint"></span>
+    </div>
+
+    <div class="card hero" id="heroCard">
+      <div class="ring-wrap">
+        <svg width="124" height="124" viewBox="0 0 124 124" aria-hidden="true">
+          <circle cx="62" cy="62" r="52" fill="none" stroke="var(--line)" stroke-width="12"></circle>
+          <circle id="ringFg" cx="62" cy="62" r="52" fill="none" stroke="var(--brand)" stroke-width="12"
+                  stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                  style="transition:stroke-dashoffset .6s ease"></circle>
+        </svg>
+        <div class="ring-txt"><span class="n" id="ringPct">0%</span><span class="l">יעד צעדים</span></div>
+      </div>
+      <div class="hero-facts" id="heroFacts"></div>
+    </div>
+
+    <div class="section-head"><h2>מדדים</h2><span class="hint">לחיצה על מדד פותחת גרף</span></div>
+    <div class="metrics" id="metricCards"></div>
+
+    <div id="dashEmpty" class="empty" style="display:none">
+      <div class="big">📊</div>
+      <h3>אין עדיין נתונים</h3>
+      <p>אפשר לסנכרן מ-Google Fit, לייבא קובץ Takeout, לרשום ידנית — או לטעון נתוני הדגמה מלשונית ההגדרות.</p>
+    </div>
+  </section>
+
+  <!-- ============ מגמות ============ -->
+  <section class="view" id="view-trends">
+    <div class="range-bar" id="rangeBar2">
+      <button class="chip" data-days="7">7 ימים</button>
+      <button class="chip active" data-days="30">30 יום</button>
+      <button class="chip" data-days="90">90 יום</button>
+      <button class="chip" data-days="365">שנה</button>
+    </div>
+    <div id="charts"></div>
+    <div id="trendsEmpty" class="empty" style="display:none">
+      <div class="big">📈</div><h3>אין נתונים להצגה</h3>
+      <p>אחרי הסנכרון או הייבוא הראשון יופיעו כאן גרפים לכל מדד.</p>
+    </div>
+  </section>
+
+  <!-- ============ יומן ============ -->
+  <section class="view" id="view-log">
+    <div class="section-head"><h2>רישום מדידה</h2></div>
+    <div class="card">
+      <div class="grid-2">
+        <div>
+          <label class="fld" for="mMetric">מדד</label>
+          <select id="mMetric"></select>
+        </div>
+        <div>
+          <label class="fld" for="mDate">תאריך</label>
+          <input type="date" id="mDate">
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <div>
+          <label class="fld" for="mValue"><span id="mValueLabel">ערך</span></label>
+          <input type="number" id="mValue" step="any" inputmode="decimal" placeholder="לדוגמה 8500">
+        </div>
+        <div id="mValue2Wrap" style="display:none">
+          <label class="fld" for="mValue2">ערך שני (דיאסטולי)</label>
+          <input type="number" id="mValue2" step="any" inputmode="decimal" placeholder="לדוגמה 80">
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn" id="mSave">שמירה</button>
+        <button class="btn ghost" id="mToday">היום</button>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>רשומות אחרונות</h2>
+      <span class="hint" id="logCount"></span>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap">
+        <table id="logTable">
+          <thead><tr><th>תאריך</th><th>מדד</th><th>ערך</th><th>מקור</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn ghost" id="logMore">הצגת עוד</button>
+    </div>
+  </section>
+
+  <!-- ============ סנכרון וייבוא ============ -->
+  <section class="view" id="view-sync">
+    <div class="section-head"><h2>סנכרון מ-Google&nbsp;Fit</h2></div>
+
+    <div class="note warn" style="margin-bottom:12px">
+      <strong>שימו לב:</strong> גוגל סגרה את ה-API של Google&nbsp;Fit למפתחים חדשים (מ-1 במאי 2024) והשירות בתהליך כיבוי במהלך 2026.
+      הסנכרון הישיר יעבוד רק אם יש לך פרויקט ב-Google&nbsp;Cloud שבו ה-Fitness&nbsp;API כבר מופעל.
+      אם הסנכרון נכשל — אפשר לייבא את כל ההיסטוריה דרך <strong>Google&nbsp;Takeout</strong> למטה, וזו גם הדרך היציבה לטווח ארוך.
+    </div>
+
+    <div class="card">
+      <label class="fld" for="clientId">מזהה לקוח OAuth (Client&nbsp;ID)</label>
+      <input type="text" id="clientId" dir="ltr" placeholder="123456789-abc.apps.googleusercontent.com" autocomplete="off">
+      <div class="kv" style="margin-top:10px">
+        <span class="k">מקור מורשה להוספה ב-Google Cloud</span>
+        <span class="v" id="originVal" dir="ltr" style="font-size:.78rem"></span>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn" id="connectBtn2">התחברות ל-Google Fit</button>
+        <button class="btn ghost" id="syncBtn2">סנכרון עכשיו</button>
+        <button class="btn ghost" id="disconnectBtn">ניתוק</button>
+      </div>
+      <div class="kv" style="margin-top:12px">
+        <span class="k">סנכרון אחרון</span><span class="v" id="lastSyncVal">—</span>
+      </div>
+      <div class="kv">
+        <span class="k">טווח משיכה</span>
+        <span class="v">
+          <select id="syncDays" style="width:auto;padding:5px 10px;font-size:.82rem">
+            <option value="7">7 ימים</option>
+            <option value="30" selected>30 יום</option>
+            <option value="90">90 יום</option>
+            <option value="365">שנה</option>
+            <option value="1095">3 שנים</option>
+          </select>
+        </span>
+      </div>
+
+      <details class="acc">
+        <summary>איך מפיקים Client ID (מדריך קצר)</summary>
+        <div class="body">
+          <ol>
+            <li>נכנסים ל-<code>console.cloud.google.com</code> ובוחרים פרויקט קיים שבו ה-Fitness API מופעל.</li>
+            <li>ב-<strong>APIs &amp; Services → Credentials</strong> יוצרים <code>OAuth client ID</code> מסוג <strong>Web application</strong>.</li>
+            <li>תחת <strong>Authorized JavaScript origins</strong> מוסיפים את המקור המוצג למעלה.</li>
+            <li>במסך ההסכמה (OAuth consent screen) מוסיפים את כתובת המייל שלך כ-<strong>Test user</strong>.</li>
+            <li>מעתיקים את ה-Client ID לשדה שלמעלה ולוחצים "התחברות".</li>
+          </ol>
+          <p style="margin-top:8px">האסימון נשמר בזיכרון הדפדפן בלבד (sessionStorage) ופג אחרי כשעה. שום נתון לא נשלח לשרת חיצוני — הכול נשאר במכשיר.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="section-head"><h2>ייבוא קובץ</h2><span class="hint">Takeout · Health Connect · CSV · גיבוי</span></div>
+    <div class="card">
+      <div class="drop" id="dropZone">
+        <span class="big">📥</span>
+        גוררים לכאן קובץ, או <a href="#" id="pickFile">בוחרים קובץ מהמכשיר</a><br>
+        <span style="font-size:.78rem">נתמכים: ZIP של Google Takeout, קובצי CSV/TSV של Fit או Health Connect, ו-JSON של גיבוי מהאפליקציה</span>
+        <input type="file" id="fileInput" accept=".zip,.csv,.tsv,.json,.txt" style="display:none" multiple>
+      </div>
+      <div id="importLog" style="margin-top:12px"></div>
+      <details class="acc">
+        <summary>איך מורידים את הנתונים מ-Google Takeout</summary>
+        <div class="body">
+          <ol>
+            <li>נכנסים ל-<code>takeout.google.com</code> עם אותו חשבון גוגל.</li>
+            <li>לוחצים "בטל בחירת הכול" ומסמנים רק את <strong>Fit</strong> (או <strong>Health Connect</strong>, אם קיים).</li>
+            <li>מייצאים בפורמט ZIP וממתינים למייל עם הקישור.</li>
+            <li>מורידים את ה-ZIP וגוררים אותו לכאן — האפליקציה תקרא את התיקייה
+              <code>Daily activity metrics</code> ותוסיף את כל הימים.</li>
+          </ol>
+          <p style="margin-top:8px">הקובץ נקרא מקומית בדפדפן ואינו מועלה לשום מקום.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ הגדרות ============ -->
+  <section class="view" id="view-settings">
+    <div class="section-head"><h2>יעדים אישיים</h2></div>
+    <div class="card">
+      <div class="grid-2">
+        <div><label class="fld" for="goalSteps">יעד צעדים יומי</label><input type="number" id="goalSteps" min="0" step="500"></div>
+        <div><label class="fld" for="goalSleep">יעד שינה (שעות)</label><input type="number" id="goalSleep" min="0" step="0.5"></div>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <div><label class="fld" for="goalCalories">יעד קלוריות</label><input type="number" id="goalCalories" min="0" step="50"></div>
+        <div><label class="fld" for="goalWater">יעד שתייה (ליטר)</label><input type="number" id="goalWater" min="0" step="0.25"></div>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <div><label class="fld" for="userHeight">גובה (ס"מ) — לחישוב BMI</label><input type="number" id="userHeight" min="0" step="1"></div>
+        <div><label class="fld" for="goalActive">יעד דקות פעילות</label><input type="number" id="goalActive" min="0" step="5"></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px"><button class="btn" id="saveSettings">שמירת הגדרות</button></div>
+    </div>
+
+    <div class="section-head"><h2>הנתונים שלי</h2></div>
+    <div class="card">
+      <div class="kv"><span class="k">ימים עם נתונים</span><span class="v" id="statDays">0</span></div>
+      <div class="kv"><span class="k">סה"כ מדידות</span><span class="v" id="statPoints">0</span></div>
+      <div class="kv"><span class="k">טווח תאריכים</span><span class="v" id="statRange">—</span></div>
+      <div class="kv"><span class="k">נפח אחסון</span><span class="v" id="statSize">—</span></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn ghost" id="exportJson">גיבוי JSON</button>
+        <button class="btn ghost" id="exportCsv">ייצוא CSV</button>
+        <button class="btn ghost" id="demoBtn">טעינת נתוני הדגמה</button>
+        <button class="btn danger" id="wipeBtn">מחיקת כל הנתונים</button>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>פרטיות</h2></div>
+    <div class="note">
+      כל הנתונים נשמרים <strong>מקומית בדפדפן שלך</strong> (localStorage) ואינם נשלחים לשום שרת.
+      התקשורת היחידה החוצה היא ישירות מול שרתי גוגל בזמן סנכרון, עם אסימון שנשמר לזמן קצוב בלבד.
+      מחיקת היסטוריית הדפדפן או שימוש בגלישה פרטית ימחקו את הנתונים — כדאי לשמור גיבוי JSON מדי פעם.
+      <br><br>
+      האפליקציה נועדה למעקב אישי בלבד ואינה מהווה ייעוץ, אבחון או המלצה רפואית.
+    </div>
+    <div style="height:40px"></div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+"use strict";
+
+/* =======================================================================
+   מידע חיוני — אפליקציית בריאות אישית
+   קובץ יחיד, ללא שרת. הנתונים נשמרים ב-localStorage של הדפדפן.
+   ======================================================================= */
+
+/* ---------------------------- הגדרות מדדים ---------------------------- */
+// agg: כיצד מסכמים מספר ימים  (sum = סכום, avg = ממוצע, last = ערך אחרון)
+// fit: איך נמשך המדד מ-Google Fit (dataType + אינדקס השדה בתשובה)
+const METRICS = {
+  steps:      {label:'צעדים',        unit:'צעדים',    icon:'👟', color:'var(--c-steps)',    agg:'sum', dec:0, chart:'bar',  goal:'goalSteps',
+               fit:{dt:'com.google.step_count.delta', idx:0, num:'intVal'}},
+  calories:   {label:'קלוריות',      unit:'קק"ל',     icon:'🔥', color:'var(--c-calories)', agg:'sum', dec:0, chart:'bar',  goal:'goalCalories',
+               fit:{dt:'com.google.calories.expended', idx:0, num:'fpVal'}},
+  distance:   {label:'מרחק',         unit:'ק"מ',      icon:'📍', color:'var(--c-distance)', agg:'sum', dec:2, chart:'bar',
+               fit:{dt:'com.google.distance.delta', idx:0, num:'fpVal', scale:0.001}},
+  active:     {label:'דקות פעילות',  unit:'דק׳',      icon:'⚡', color:'var(--c-active)',   agg:'sum', dec:0, chart:'bar',  goal:'goalActive',
+               fit:{dt:'com.google.active_minutes', idx:0, num:'intVal'}},
+  heart_pts:  {label:'נקודות לב',    unit:'נק׳',      icon:'💚', color:'var(--c-active)',   agg:'sum', dec:0, chart:'bar',
+               fit:{dt:'com.google.heart_minutes', idx:0, num:'fpVal'}},
+  heart_rate: {label:'דופק ממוצע',   unit:'פע׳/דק׳',  icon:'❤️', color:'var(--c-heart)',    agg:'avg', dec:0, chart:'line',
+               fit:{dt:'com.google.heart_rate.bpm', idx:0, num:'fpVal'}},
+  hr_rest:    {label:'דופק מנוחה',   unit:'פע׳/דק׳',  icon:'🫀', color:'var(--c-heart)',    agg:'avg', dec:0, chart:'line'},
+  sleep:      {label:'שינה',         unit:'שעות',     icon:'😴', color:'var(--c-sleep)',    agg:'avg', dec:1, chart:'bar',  goal:'goalSleep', special:'sleep'},
+  weight:     {label:'משקל',         unit:'ק"ג',      icon:'⚖️', color:'var(--c-weight)',   agg:'last', dec:1, chart:'line',
+               fit:{dt:'com.google.weight', idx:0, num:'fpVal'}},
+  body_fat:   {label:'אחוז שומן',    unit:'%',        icon:'📉', color:'var(--c-fat)',      agg:'last', dec:1, chart:'line',
+               fit:{dt:'com.google.body.fat.percentage', idx:0, num:'fpVal'}},
+  bp_sys:     {label:'לחץ דם סיסטולי',unit:'mmHg',    icon:'🩸', color:'var(--c-bp)',       agg:'avg', dec:0, chart:'line', pair:'bp_dia',
+               fit:{dt:'com.google.blood_pressure', idx:0, num:'fpVal'}},
+  bp_dia:     {label:'לחץ דם דיאסטולי',unit:'mmHg',   icon:'🩸', color:'var(--c-bp)',       agg:'avg', dec:0, chart:'line', hideCard:true,
+               fit:{dt:'com.google.blood_pressure', idx:3, num:'fpVal'}},
+  glucose:    {label:'סוכר בדם',     unit:'mg/dL',    icon:'🍬', color:'var(--c-glucose)',  agg:'avg', dec:0, chart:'line',
+               fit:{dt:'com.google.blood_glucose', idx:0, num:'fpVal', scale:18.0182}},
+  spo2:       {label:'ריווי חמצן',   unit:'%',        icon:'🫁', color:'var(--c-spo2)',     agg:'avg', dec:0, chart:'line',
+               fit:{dt:'com.google.oxygen_saturation', idx:0, num:'fpVal'}},
+  water:      {label:'שתייה',        unit:'ליטר',     icon:'💧', color:'var(--c-water)',    agg:'sum', dec:2, chart:'bar', goal:'goalWater',
+               fit:{dt:'com.google.hydration', idx:0, num:'fpVal', scale:0.001}}
+};
+const METRIC_KEYS = Object.keys(METRICS);
+
+/* ---- מדדים שמוצגים כברירת מחדל בכרטיסים (לפי סדר חשיבות) ---- */
+const CARD_ORDER = ['steps','active','calories','distance','heart_rate','sleep','weight','bp_sys','glucose','spo2','body_fat','water','heart_pts','hr_rest'];
+
+/* ------------------------------ אחסון ------------------------------ */
+const LS_DATA = 'vitals.data.v1';
+const LS_SET  = 'vitals.settings.v1';
+const SS_TOK  = 'vitals.token';
+
+const DEFAULT_SETTINGS = {
+  goalSteps:10000, goalSleep:7.5, goalCalories:2200, goalWater:2.5, goalActive:30,
+  userHeight:0, clientId:'', lastSync:null, theme:null
+};
+
+let DATA = {};        // { 'YYYY-MM-DD': { metric: {v:Number, s:'fit'|'manual'|'import'|'demo'} } }
+let SET  = {...DEFAULT_SETTINGS};
+
+function loadAll(){
+  try{ DATA = JSON.parse(localStorage.getItem(LS_DATA) || '{}') || {}; }catch(e){ DATA = {}; }
+  try{ SET = {...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(LS_SET)||'{}')||{})}; }catch(e){ SET = {...DEFAULT_SETTINGS}; }
+}
+let saveTimer = null;
+function saveData(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(LS_DATA, JSON.stringify(DATA)); }
+    catch(e){ toast('שגיאת שמירה — ייתכן שנגמר מקום האחסון בדפדפן','err'); }
+  }, 120);
+}
+function saveSettings(){
+  try{ localStorage.setItem(LS_SET, JSON.stringify(SET)); }catch(e){}
+}
+function setPoint(date, metric, value, source){
+  if(value === null || value === undefined || !isFinite(value)) return false;
+  if(!METRICS[metric]) return false;
+  if(!DATA[date]) DATA[date] = {};
+  DATA[date][metric] = {v:+(+value).toFixed(4), s:source||'manual'};
+  return true;
+}
+function delPoint(date, metric){
+  if(DATA[date] && DATA[date][metric]){
+    delete DATA[date][metric];
+    if(!Object.keys(DATA[date]).length) delete DATA[date];
+    saveData(); return true;
+  }
+  return false;
+}
+
+/* ------------------------------ עזרים ------------------------------ */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+
+function ymd(d){
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function parseYmd(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function todayStr(){ return ymd(new Date()); }
+function rangeDates(days){
+  const out = [], end = new Date();
+  for(let i = days-1; i >= 0; i--) out.push(ymd(addDays(end, -i)));
+  return out;
+}
+function fmtNum(n, dec){
+  if(n === null || n === undefined || !isFinite(n)) return '—';
+  return Number(n).toLocaleString('he-IL', {minimumFractionDigits:dec||0, maximumFractionDigits:dec||0});
+}
+function fmtDateHe(s){
+  const d = parseYmd(s);
+  return d.toLocaleDateString('he-IL', {day:'numeric', month:'short'});
+}
+function fmtDateFull(s){
+  const d = parseYmd(s);
+  return d.toLocaleDateString('he-IL', {weekday:'short', day:'numeric', month:'numeric', year:'2-digit'});
+}
+function toast(msg, kind){
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' '+kind : '');
+  el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(()=>{ el.style.opacity = '0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(), 320); }, 3200);
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* --- אגירת ערכים לטווח --- */
+function seriesFor(metric, dates){
+  return dates.map(d => (DATA[d] && DATA[d][metric]) ? DATA[d][metric].v : null);
+}
+function aggregate(metric, dates){
+  const m = METRICS[metric];
+  const vals = seriesFor(metric, dates).filter(v => v !== null);
+  if(!vals.length) return null;
+  if(m.agg === 'sum')  return vals.reduce((a,b)=>a+b, 0);
+  if(m.agg === 'avg')  return vals.reduce((a,b)=>a+b, 0) / vals.length;
+  return vals[vals.length-1];                       // last
+}
+function dailyAvg(metric, dates){
+  const m = METRICS[metric];
+  const vals = seriesFor(metric, dates).filter(v => v !== null);
+  if(!vals.length) return null;
+  if(m.agg === 'sum') return vals.reduce((a,b)=>a+b,0) / vals.length;
+  return aggregate(metric, dates);
+}
+function hasAnyData(){ return Object.keys(DATA).length > 0; }
+
+/* ============================ תצוגה ============================ */
+let RANGE = 7;        // טווח לוח המחוונים
+let RANGE_T = 30;     // טווח מסך המגמות
+let LOG_LIMIT = 50;
+
+function renderAll(){
+  renderHeader();
+  renderDash();
+  renderCharts();
+  renderLog();
+  renderStats();
+}
+
+function renderHeader(){
+  const d = new Date();
+  $('#todayLine').textContent = d.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long'});
+  $('#lastSyncVal').textContent = SET.lastSync
+    ? new Date(SET.lastSync).toLocaleString('he-IL', {day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})
+    : '—';
+}
+
+/* ---------------------------- לוח מחוונים ---------------------------- */
+function renderDash(){
+  const dates = rangeDates(RANGE);
+  const prev  = rangeDates(RANGE*2).slice(0, RANGE);
+  const any = hasAnyData();
+  $('#dashEmpty').style.display = any ? 'none' : 'block';
+  $('#heroCard').style.display  = any ? 'grid' : 'none';
+  $('#metricCards').style.display = any ? 'grid' : 'none';
+  $('#rangeHint').textContent = RANGE === 1 ? fmtDateFull(dates[0])
+    : fmtDateHe(dates[0]) + ' – ' + fmtDateHe(dates[dates.length-1]);
+  if(!any){ $('#metricCards').innerHTML = ''; $('#heroFacts').innerHTML = ''; return; }
+
+  /* --- טבעת יעד הצעדים --- */
+  const stepAvg = dailyAvg('steps', dates);
+  const goal = +SET.goalSteps || 10000;
+  const pct = stepAvg ? Math.min(100, Math.round(stepAvg / goal * 100)) : 0;
+  const circ = 2 * Math.PI * 52;
+  $('#ringFg').setAttribute('stroke-dashoffset', String(circ - circ * pct / 100));
+  $('#ringPct').textContent = pct + '%';
+
+  /* --- עובדות מהירות --- */
+  const stepVals = seriesFor('steps', dates).filter(v => v !== null);
+  const best = stepVals.length ? Math.max(...stepVals) : null;
+  const hitDays = stepVals.filter(v => v >= goal).length;
+  const activeDays = dates.filter(d => DATA[d] && Object.keys(DATA[d]).length).length;
+  const facts = [
+    {k:'ממוצע צעדים ליום', v: stepAvg ? fmtNum(stepAvg,0) : '—'},
+    {k:'סה"כ צעדים',       v: stepVals.length ? fmtNum(stepVals.reduce((a,b)=>a+b,0),0) : '—'},
+    {k:'היום הטוב ביותר',  v: best ? fmtNum(best,0) : '—'},
+    {k:'ימים שבהם עמדת ביעד', v: hitDays + ' / ' + dates.length},
+    {k:'ימים עם נתונים',   v: activeDays + ' / ' + dates.length}
+  ];
+  const bmi = calcBmi();
+  if(bmi) facts.push({k:'BMI', v: bmi.toFixed(1)});
+  $('#heroFacts').innerHTML = facts.map(f =>
+    '<div class="fact"><div class="k">'+esc(f.k)+'</div><div class="v">'+esc(f.v)+'</div></div>').join('');
+
+  /* --- כרטיסי מדדים --- */
+  const cards = [];
+  CARD_ORDER.forEach(key => {
+    const m = METRICS[key];
+    if(!m || m.hideCard) return;
+    const cur = aggregate(key, dates);
+    if(cur === null) return;
+    const before = aggregate(key, prev);
+    const shown = (m.agg === 'sum' && RANGE > 1) ? dailyAvg(key, dates) : cur;
+    const shownPrev = (m.agg === 'sum' && RANGE > 1) ? dailyAvg(key, prev) : before;
+    let trendHtml = '<span class="trend flat">—</span>';
+    if(shownPrev !== null && shownPrev !== 0){
+      const diff = (shown - shownPrev) / Math.abs(shownPrev) * 100;
+      const flat = Math.abs(diff) < 1;
+      const cls = flat ? 'flat' : (diff > 0 ? 'up' : 'down');
+      const arrow = flat ? '≈' : (diff > 0 ? '▲' : '▼');
+      trendHtml = '<span class="trend '+cls+'"><bdi>'+arrow+' '+Math.abs(diff).toFixed(0)+'%</bdi></span>';
+    }
+    let extra = '';
+    if(key === 'bp_sys'){
+      const dia = aggregate('bp_dia', dates);
+      if(dia !== null) extra = ' / ' + fmtNum(dia, 0);
+    }
+    const spark = sparkline(key, dates);
+    const sub = RANGE === 1 ? 'היום'
+              : (m.agg === 'sum' ? 'ממוצע יומי' : (m.agg === 'avg' ? 'ממוצע' : 'אחרון'));
+    cards.push(
+      '<button class="metric" data-metric="'+key+'" style="--mc:'+m.color+'">'+
+        '<div class="m-top"><span class="m-ico">'+m.icon+'</span><span class="m-name">'+esc(m.label)+'</span></div>'+
+        '<div class="m-val"><bdi>'+fmtNum(shown, m.dec)+extra+'</bdi><span class="m-unit">'+esc(m.unit)+'</span></div>'+
+        '<div class="m-sub">'+trendHtml+'<span>'+sub+'</span></div>'+
+        spark+
+      '</button>');
+  });
+  $('#metricCards').innerHTML = cards.join('') ||
+    '<div class="note">אין מדידות בטווח שנבחר. אפשר להרחיב את הטווח למעלה.</div>';
+}
+
+function calcBmi(){
+  const h = +SET.userHeight;
+  if(!h) return null;
+  const dates = rangeDates(400);
+  const w = aggregate('weight', dates);
+  if(!w) return null;
+  return w / Math.pow(h/100, 2);
+}
+
+/* ------------------------------ גרפים ------------------------------ */
+function sparkline(metric, dates){
+  const m = METRICS[metric];
+  const vals = seriesFor(metric, dates);
+  const known = vals.filter(v => v !== null);
+  if(known.length < 2) return '';
+  const max = Math.max(...known), min = Math.min(...known);
+  const span = (max - min) || 1;
+  const W = 100, H = 30, n = vals.length;
+  const x = i => n === 1 ? W/2 : i * (W / (n-1));
+  const y = v => H - 2 - ((v - min) / span) * (H - 6);
+  let path = '', started = false;
+  vals.forEach((v,i) => {
+    if(v === null) return;
+    path += (started ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1) + ' ';
+    started = true;
+  });
+  return '<svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+    '<path d="'+path.trim()+'" fill="none" stroke="'+m.color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'+
+    '</svg>';
+}
+
+/* גרף מלא: עמודות או קו, עם רשת, תוויות ציר ויעד */
+function bigChart(metric, dates){
+  const m = METRICS[metric];
+  const vals = seriesFor(metric, dates);
+  const known = vals.filter(v => v !== null);
+  if(!known.length) return '';
+  const W = 620, H = 210, padT = 14, padB = 26, padL = 26, padR = 48;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const goalVal = m.goal ? +SET[m.goal] : 0;
+  let max = Math.max(...known, goalVal || 0);
+  let min = m.chart === 'bar' ? 0 : Math.min(...known);
+  if(m.chart === 'line'){ const pad = (max - min) * 0.15 || Math.abs(max*0.05) || 1; max += pad; min -= pad; }
+  if(max === min) max = min + 1;
+  const n = vals.length;
+  const xAt = i => padL + (n === 1 ? innerW/2 : i * (innerW / (n - (m.chart==='bar' ? 0 : 1))) + (m.chart==='bar' ? innerW/n/2 : 0));
+  const yAt = v => padT + innerH - ((v - min) / (max - min)) * innerH;
+
+  let g = '';
+  // קווי רשת + תוויות ציר Y
+  for(let i = 0; i <= 3; i++){
+    const v = min + (max - min) * i / 3, y = yAt(v);
+    g += '<line class="grid-line" x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'"/>';
+    g += '<text x="'+(W-padR+6)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="start">'+fmtNum(v, m.dec)+'</text>';
+  }
+  // קו יעד
+  if(goalVal && goalVal >= min && goalVal <= max){
+    const y = yAt(goalVal);
+    g += '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="'+m.color+'" stroke-width="1.4" stroke-dasharray="5 4" opacity=".75"/>';
+  }
+  // הנתונים
+  if(m.chart === 'bar'){
+    const bw = Math.max(2, innerW / n * 0.62);
+    vals.forEach((v,i) => {
+      if(v === null) return;
+      const y = yAt(v), h = Math.max(1.5, padT + innerH - y);
+      const hit = goalVal ? v >= goalVal : true;
+      g += '<rect x="'+(xAt(i)-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+
+           '" rx="'+Math.min(3, bw/2).toFixed(1)+'" fill="'+m.color+'" opacity="'+(hit ? '1' : '.55')+'"><title>'+
+           fmtDateFull(dates[i])+': '+fmtNum(v, m.dec)+' '+esc(m.unit)+'</title></rect>';
+    });
+  } else {
+    let path = '', started = false, dots = '';
+    vals.forEach((v,i) => {
+      if(v === null){ started = false; return; }
+      path += (started ? 'L' : 'M') + xAt(i).toFixed(1) + ' ' + yAt(v).toFixed(1) + ' ';
+      started = true;
+      if(n <= 45) dots += '<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(v).toFixed(1)+'" r="3" fill="'+m.color+'"><title>'+
+        fmtDateFull(dates[i])+': '+fmtNum(v, m.dec)+' '+esc(m.unit)+'</title></circle>';
+    });
+    g += '<path d="'+path.trim()+'" fill="none" stroke="'+m.color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>' + dots;
+  }
+  // תוויות ציר X
+  const step = Math.max(1, Math.ceil(n / 7));
+  vals.forEach((v,i) => {
+    if(i % step !== 0 && i !== n-1) return;
+    g += '<text x="'+xAt(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(fmtDateHe(dates[i]))+'</text>';
+  });
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="גרף '+esc(m.label)+'">'+g+'</svg>';
+}
+
+function renderCharts(){
+  const dates = rangeDates(RANGE_T);
+  const host = $('#charts');
+  const blocks = [];
+  CARD_ORDER.forEach(key => {
+    const m = METRICS[key];
+    if(!m || m.hideCard) return;
+    const vals = seriesFor(key, dates).filter(v => v !== null);
+    if(vals.length < 1) return;
+    const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const stats = [
+      {c:m.color, t:'ממוצע ' + fmtNum(avg, m.dec)},
+      {c:'var(--faint)', t:'מקסימום ' + fmtNum(Math.max(...vals), m.dec)},
+      {c:'var(--faint)', t:'מינימום ' + fmtNum(Math.min(...vals), m.dec)}
+    ];
+    if(m.goal && +SET[m.goal]) stats.push({c:m.color, t:'יעד ' + fmtNum(+SET[m.goal], m.dec)});
+    blocks.push(
+      '<div class="card chart-card" id="chart-'+key+'">'+
+        '<div class="chart-head"><h3>'+m.icon+' '+esc(m.label)+'</h3>'+
+        '<span class="sub">'+vals.length+' מדידות · '+esc(m.unit)+'</span></div>'+
+        bigChart(key, dates)+
+        '<div class="legend">'+stats.map(s=>'<span><i style="background:'+s.c+'"></i>'+esc(s.t)+'</span>').join('')+'</div>'+
+      '</div>');
+  });
+  host.innerHTML = blocks.join('');
+  $('#trendsEmpty').style.display = blocks.length ? 'none' : 'block';
+}
+
+/* ------------------------------ יומן ------------------------------ */
+function flatRecords(){
+  const out = [];
+  Object.keys(DATA).sort().reverse().forEach(date => {
+    Object.keys(DATA[date]).forEach(metric => {
+      if(!METRICS[metric]) return;
+      out.push({date, metric, v:DATA[date][metric].v, s:DATA[date][metric].s});
+    });
+  });
+  return out;
+}
+const SRC_LABEL = {fit:'Google Fit', manual:'ידני', import:'ייבוא', demo:'הדגמה'};
+function renderLog(){
+  const recs = flatRecords();
+  const tbody = $('#logTable tbody');
+  $('#logCount').textContent = recs.length ? 'סה"כ ' + fmtNum(recs.length,0) + ' רשומות' : '';
+  if(!recs.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:28px">אין עדיין רשומות</td></tr>';
+    $('#logMore').style.display = 'none';
+    return;
+  }
+  const shown = recs.slice(0, LOG_LIMIT);
+  tbody.innerHTML = shown.map(r => {
+    const m = METRICS[r.metric];
+    const cls = (r.s === 'fit') ? 'fit' : (r.s === 'manual' ? 'manual' : 'import');
+    return '<tr><td>'+esc(fmtDateFull(r.date))+'</td>'+
+      '<td>'+m.icon+' '+esc(m.label)+'</td>'+
+      '<td><strong>'+fmtNum(r.v, m.dec)+'</strong> <span style="color:var(--faint);font-size:.8em">'+esc(m.unit)+'</span></td>'+
+      '<td><span class="src-tag '+cls+'">'+esc(SRC_LABEL[r.s] || r.s)+'</span></td>'+
+      '<td><button class="row-del" data-date="'+r.date+'" data-metric="'+r.metric+'">מחיקה</button></td></tr>';
+  }).join('');
+  $('#logMore').style.display = recs.length > LOG_LIMIT ? 'inline-block' : 'none';
+}
+
+function renderStats(){
+  const days = Object.keys(DATA).sort();
+  let points = 0;
+  days.forEach(d => points += Object.keys(DATA[d]).length);
+  $('#statDays').textContent = fmtNum(days.length, 0);
+  $('#statPoints').textContent = fmtNum(points, 0);
+  $('#statRange').textContent = days.length ? fmtDateFull(days[0]) + ' – ' + fmtDateFull(days[days.length-1]) : '—';
+  const bytes = new Blob([JSON.stringify(DATA)]).size;
+  $('#statSize').textContent = bytes < 1024 ? bytes + ' בייט' : (bytes/1024).toFixed(1) + ' KB';
+}
+
+/* ====================== סנכרון מול Google Fit ====================== */
+const FIT_SCOPES = [
+  'https://www.googleapis.com/auth/fitness.activity.read',
+  'https://www.googleapis.com/auth/fitness.body.read',
+  'https://www.googleapis.com/auth/fitness.heart_rate.read',
+  'https://www.googleapis.com/auth/fitness.sleep.read',
+  'https://www.googleapis.com/auth/fitness.blood_pressure.read',
+  'https://www.googleapis.com/auth/fitness.blood_glucose.read',
+  'https://www.googleapis.com/auth/fitness.oxygen_saturation.read',
+  'https://www.googleapis.com/auth/fitness.nutrition.read'
+].join(' ');
+const FIT_BASE = 'https://www.googleapis.com/fitness/v1/users/me';
+
+let tokenClient = null;
+let TOKEN = null;              // {access_token, exp}
+
+function loadToken(){
+  try{
+    const t = JSON.parse(sessionStorage.getItem(SS_TOK) || 'null');
+    TOKEN = (t && t.exp > Date.now() + 30000) ? t : null;
+  }catch(e){ TOKEN = null; }
+}
+function storeToken(access_token, expires_in){
+  TOKEN = {access_token, exp: Date.now() + (expires_in || 3600) * 1000};
+  try{ sessionStorage.setItem(SS_TOK, JSON.stringify(TOKEN)); }catch(e){}
+}
+function clearToken(){ TOKEN = null; try{ sessionStorage.removeItem(SS_TOK); }catch(e){} }
+function isConnected(){ return !!(TOKEN && TOKEN.exp > Date.now()); }
+
+function setSyncUi(state, text){
+  const dot = $('#syncDot');
+  dot.className = 'dot ' + (state === 'on' ? 'on' : state === 'off' ? 'off' : '');
+  $('#syncText').textContent = text;
+  $('#connectBtn').textContent = state === 'on' ? 'סנכרון' : 'חיבור';
+}
+function refreshSyncUi(){
+  if(isConnected()){
+    const mins = Math.round((TOKEN.exp - Date.now()) / 60000);
+    setSyncUi('on', 'מחובר ל-Google Fit · תוקף החיבור ' + mins + ' דק׳');
+  } else if(SET.lastSync){
+    setSyncUi('', 'סנכרון אחרון: ' + new Date(SET.lastSync).toLocaleString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}));
+  } else {
+    setSyncUi('off', 'לא מחובר ל-Google Fit');
+  }
+}
+
+function ensureTokenClient(){
+  if(!window.google || !google.accounts || !google.accounts.oauth2){
+    toast('ספריית ההתחברות של גוגל לא נטענה. יש לבדוק חיבור לאינטרנט או חוסם פרסומות.', 'err');
+    return null;
+  }
+  const cid = (SET.clientId || '').trim();
+  if(!cid){
+    toast('צריך להזין קודם Client ID בלשונית "סנכרון וייבוא"', 'err');
+    showView('sync'); $('#clientId').focus();
+    return null;
+  }
+  if(!tokenClient || tokenClient.__cid !== cid){
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: cid,
+      scope: FIT_SCOPES,
+      callback: (resp) => {
+        if(resp && resp.access_token){
+          storeToken(resp.access_token, resp.expires_in);
+          refreshSyncUi();
+          toast('התחברת בהצלחה — מתחיל סנכרון', 'ok');
+          syncNow();
+        } else {
+          toast('ההתחברות בוטלה או נכשלה', 'err');
+        }
+      },
+      error_callback: (err) => {
+        console.warn('OAuth error', err);
+        toast('שגיאת התחברות: ' + ((err && (err.type || err.message)) || 'לא ידוע'), 'err');
+      }
+    });
+    tokenClient.__cid = cid;
+  }
+  return tokenClient;
+}
+
+function connectFit(){
+  const tc = ensureTokenClient();
+  if(!tc) return;
+  tc.requestAccessToken({prompt: isConnected() ? '' : 'consent'});
+}
+
+async function fitFetch(path, body){
+  const res = await fetch(FIT_BASE + path, {
+    method: body ? 'POST' : 'GET',
+    headers: Object.assign({'Authorization':'Bearer ' + TOKEN.access_token},
+                           body ? {'Content-Type':'application/json'} : {}),
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if(res.status === 401){ clearToken(); refreshSyncUi(); throw new Error('AUTH'); }
+  if(!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try{ const j = await res.json(); if(j.error && j.error.message) msg = j.error.message; }catch(e){}
+    const err = new Error(msg); err.status = res.status; throw err;
+  }
+  return res.json();
+}
+
+/* משיכת מדד יחיד באגירה יומית */
+async function fitAggregate(metricKey, startMs, endMs){
+  const m = METRICS[metricKey];
+  const json = await fitFetch('/dataset:aggregate', {
+    aggregateBy: [{dataTypeName: m.fit.dt}],
+    bucketByTime: {durationMillis: 86400000},
+    startTimeMillis: startMs,
+    endTimeMillis: endMs
+  });
+  let count = 0;
+  (json.bucket || []).forEach(b => {
+    const date = ymd(new Date(+b.startTimeMillis));
+    (b.dataset || []).forEach(ds => {
+      (ds.point || []).forEach(p => {
+        const cell = (p.value || [])[m.fit.idx];
+        if(!cell) return;
+        let v = cell[m.fit.num];
+        if(v === undefined || v === null) v = (cell.fpVal !== undefined ? cell.fpVal : cell.intVal);
+        if(v === undefined || v === null || !isFinite(v)) return;
+        if(m.fit.scale) v *= m.fit.scale;
+        if(setPoint(date, metricKey, v, 'fit')) count++;
+      });
+    });
+  });
+  return count;
+}
+
+/* שינה — דרך רשימת ה-sessions (activityType 72) */
+async function fitSleep(startMs, endMs){
+  const q = '?startTime=' + new Date(startMs).toISOString() +
+            '&endTime='   + new Date(endMs).toISOString() +
+            '&activityType=72';
+  const json = await fitFetch('/sessions' + q);
+  const byDate = {};
+  (json.session || []).forEach(s => {
+    const st = +s.startTimeMillis, en = +s.endTimeMillis;
+    if(!isFinite(st) || !isFinite(en) || en <= st) return;
+    const date = ymd(new Date(en));               // שיוך לפי בוקר היקיצה
+    byDate[date] = (byDate[date] || 0) + (en - st) / 3600000;
+  });
+  let count = 0;
+  Object.keys(byDate).forEach(d => { if(setPoint(d, 'sleep', byDate[d], 'fit')) count++; });
+  return count;
+}
+
+let syncing = false;
+async function syncNow(){
+  if(syncing) return;
+  if(!isConnected()){ connectFit(); return; }
+  syncing = true;
+  const days = +$('#syncDays').value || 30;
+  const start = addDays(new Date(), -(days - 1)); start.setHours(0,0,0,0);
+  const startMs = start.getTime(), endMs = Date.now();
+  setSyncUi('', 'מסנכרן…');
+  $('#syncBtn').style.opacity = '.5';
+
+  let total = 0; const failed = [], okMetrics = [];
+  for(const key of METRIC_KEYS){
+    const m = METRICS[key];
+    if(!m.fit) continue;
+    try{
+      const c = await fitAggregate(key, startMs, endMs);
+      total += c; if(c) okMetrics.push(m.label);
+    }catch(e){
+      if(e.message === 'AUTH'){ toast('פג תוקף החיבור — יש להתחבר מחדש', 'err'); syncing = false; $('#syncBtn').style.opacity=''; refreshSyncUi(); return; }
+      failed.push({label:m.label, msg:e.message, status:e.status});
+    }
+  }
+  try{
+    const c = await fitSleep(startMs, endMs);
+    total += c; if(c) okMetrics.push('שינה');
+  }catch(e){
+    if(e.message !== 'AUTH') failed.push({label:'שינה', msg:e.message, status:e.status});
+  }
+
+  saveData();
+  SET.lastSync = Date.now(); saveSettings();
+  renderAll(); refreshSyncUi();
+  $('#syncBtn').style.opacity = '';
+  syncing = false;
+
+  if(total){
+    toast('הסנכרון הושלם · ' + total + ' מדידות עודכנו', 'ok');
+  } else if(failed.length){
+    const f = failed[0];
+    if(f.status === 403){
+      toast('גוגל חסמה את הגישה ל-Fitness API (403). ייתכן שה-API כבוי בפרויקט או שהשירות הופסק — כדאי לייבא דרך Takeout.', 'err');
+    } else {
+      toast('הסנכרון נכשל: ' + f.msg, 'err');
+    }
+  } else {
+    toast('לא נמצאו נתונים חדשים בטווח שנבחר');
+  }
+  if(failed.length) console.warn('מדדים שנכשלו בסנכרון:', failed);
+}
+
+function disconnectFit(){
+  const t = TOKEN && TOKEN.access_token;
+  clearToken(); refreshSyncUi();
+  if(t && window.google && google.accounts && google.accounts.oauth2){
+    try{ google.accounts.oauth2.revoke(t, ()=>{}); }catch(e){}
+  }
+  toast('החיבור ל-Google Fit נותק');
+}
+
+/* ======================= ייבוא קבצים ומיזוג ======================= */
+
+/* --- קורא ZIP מינימלי (Store + Deflate) ללא ספריות חיצוניות --- */
+async function readZip(file){
+  const buf = await file.arrayBuffer();
+  const dv = new DataView(buf);
+  let eocd = -1;
+  const floor = Math.max(0, buf.byteLength - 66000);
+  for(let i = buf.byteLength - 22; i >= floor; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error('הקובץ אינו ZIP תקין');
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const dec = new TextDecoder('utf-8');
+  const entries = [];
+  for(let i = 0; i < count; i++){
+    if(p + 46 > buf.byteLength || dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true);
+    const csize  = dv.getUint32(p + 20, true);
+    const nlen   = dv.getUint16(p + 28, true);
+    const elen   = dv.getUint16(p + 30, true);
+    const clen   = dv.getUint16(p + 32, true);
+    const lho    = dv.getUint32(p + 42, true);
+    const name   = dec.decode(new Uint8Array(buf, p + 46, nlen));
+    entries.push({name, method, csize, lho});
+    p += 46 + nlen + elen + clen;
+  }
+  return {buf, dv, entries};
+}
+async function zipText(zip, e){
+  const nlen = zip.dv.getUint16(e.lho + 26, true);
+  const elen = zip.dv.getUint16(e.lho + 28, true);
+  const raw = new Uint8Array(zip.buf, e.lho + 30 + nlen + elen, e.csize);
+  if(e.method === 0) return new TextDecoder('utf-8').decode(raw);
+  if(e.method === 8){
+    if(typeof DecompressionStream === 'undefined') throw new Error('הדפדפן לא תומך בפתיחת ZIP דחוס');
+    const stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return await new Response(stream).text();
+  }
+  throw new Error('שיטת דחיסה לא נתמכת בקובץ ' + e.name);
+}
+
+/* --- פענוח CSV/TSV --- */
+function parseDelimited(text){
+  const t = text.replace(/^﻿/, '');
+  const delim = (t.split('\n')[0].split('\t').length > t.split('\n')[0].split(',').length) ? '\t' : ',';
+  const rows = []; let row = [], cell = '', q = false;
+  for(let i = 0; i < t.length; i++){
+    const c = t[i];
+    if(q){
+      if(c === '"'){ if(t[i+1] === '"'){ cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if(c === '"' && cell === '') q = true;   // גרש פותח שדה רק בתחילתו
+    else if(c === '"') cell += c;                   // גרש באמצע טקסט — תו רגיל
+    else if(c === delim){ row.push(cell); cell = ''; }
+    else if(c === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if(c !== '\r') cell += c;
+  }
+  if(cell.length || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ''));
+}
+
+/* --- זיהוי עמודות לפי כותרת (אנגלית ועברית) --- */
+const COL_MAP = [
+  {key:'steps',      re:/(step\s*count|steps|צעדים)/i},
+  {key:'calories',   re:/(calor|קלורי)/i},
+  {key:'distance',   re:/(distance|מרחק)/i},
+  {key:'active',     re:/(move\s*minutes|active\s*minutes|דקות\s*(תנועה|פעילות))/i},
+  {key:'heart_pts',  re:/(heart\s*points|נקודות\s*לב)/i},
+  {key:'heart_rate', re:/(average\s*heart\s*rate|avg\s*heart\s*rate|heart\s*rate|דופק)/i},
+  {key:'hr_rest',    re:/(resting\s*heart|דופק\s*מנוחה)/i},
+  {key:'sleep',      re:/(sleep|שינה)/i},
+  {key:'weight',     re:/(weight|משקל)/i},
+  {key:'body_fat',   re:/(fat\s*percent|body\s*fat|אחוז\s*שומן)/i},
+  {key:'bp_sys',     re:/(systolic|סיסטולי)/i},
+  {key:'bp_dia',     re:/(diastolic|דיאסטולי)/i},
+  {key:'glucose',    re:/(glucose|סוכר)/i},
+  {key:'spo2',       re:/(oxygen\s*saturation|spo2|ריווי\s*חמצן)/i},
+  {key:'water',      re:/(hydration|water|שתייה|מים)/i}
+];
+const SKIP_COL = /\b(max|min|maximum|minimum)\b|מקסימ|מינימ|latitude|longitude|קו\s*רוחב|קו\s*אורך/i;
+
+function columnMetric(header){
+  const h = String(header || '').trim();
+  if(!h || SKIP_COL.test(h)) return null;
+  for(const c of COL_MAP){ if(c.re.test(h)) return c.key; }
+  return null;
+}
+/* המרת יחידות לפי מה שמופיע בכותרת */
+function convertByHeader(key, header, v){
+  const h = String(header).toLowerCase();
+  if(key === 'distance'){
+    if(/\(m\)|\bmeters?\b|מטר|\(מ/.test(h)) return v / 1000;
+    if(/\bkm\b|ק"מ|ק״מ/.test(h)) return v;
+    return v > 300 ? v / 1000 : v;                 // ניחוש סביר: ערך גדול = מטרים
+  }
+  if(key === 'sleep' || key === 'active'){
+    if(/\(ms\)|millis/.test(h)) return key === 'sleep' ? v / 3600000 : v / 60000;
+    if(/\(s\)|seconds|שניות/.test(h)) return key === 'sleep' ? v / 3600 : v / 60;
+    if(/\(min|minutes|דקות/.test(h)) return key === 'sleep' ? v / 60 : v;
+    if(key === 'sleep' && v > 24) return v / 60;   // כנראה דקות
+  }
+  if(key === 'water'){
+    if(/\(ml\)|מ"ל|מ״ל/.test(h)) return v / 1000;
+  }
+  return v;
+}
+function findDateCol(header){
+  for(let i = 0; i < header.length; i++){
+    if(/^(date|day|תאריך|יום)$/i.test(String(header[i]).trim())) return i;
+  }
+  for(let i = 0; i < header.length; i++){
+    if(/date|תאריך/i.test(String(header[i]))) return i;
+  }
+  return -1;
+}
+function normDate(s){
+  s = String(s).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
+  m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/);            // dd/mm/yyyy
+  if(m) return m[3] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[1]).padStart(2,'0');
+  const d = new Date(s);
+  return isNaN(d) ? null : ymd(d);
+}
+function numOf(s){
+  if(s === null || s === undefined) return null;
+  const t = String(s).replace(/[",\s]/g, '').replace(/[^\d.eE+-]/g, '');
+  if(t === '' || t === '-') return null;
+  const v = parseFloat(t);
+  return isFinite(v) ? v : null;
+}
+
+/* עיבוד קובץ טבלאי אחד → {added, dates} */
+function importDelimited(name, text){
+  const empty = {added:0, dates:[]};
+  const rows = parseDelimited(text);
+  if(rows.length < 2) return empty;
+  const header = rows[0];
+  const dateCol = findDateCol(header);
+  const cols = header.map((h,i) => (i === dateCol) ? null : columnMetric(h));
+  if(!cols.some(Boolean)) return empty;
+  let added = 0; const dates = new Set();
+
+  if(dateCol >= 0){
+    for(let r = 1; r < rows.length; r++){
+      const date = normDate(rows[r][dateCol]);
+      if(!date) continue;
+      cols.forEach((key, i) => {
+        if(!key) return;
+        let v = numOf(rows[r][i]);
+        if(v === null) return;
+        v = convertByHeader(key, header[i], v);
+        if(setPoint(date, key, v, 'import')){ added++; dates.add(date); }
+      });
+    }
+    return {added, dates:Array.from(dates)};
+  }
+
+  /* קובץ יומי ללא עמודת תאריך — התאריך מגיע משם הקובץ */
+  const fm = name.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(!fm) return empty;
+  const date = fm[1] + '-' + fm[2] + '-' + fm[3];
+  const acc = {};
+  for(let r = 1; r < rows.length; r++){
+    cols.forEach((key, i) => {
+      if(!key) return;
+      let v = numOf(rows[r][i]);
+      if(v === null) return;
+      v = convertByHeader(key, header[i], v);
+      (acc[key] = acc[key] || []).push(v);
+    });
+  }
+  Object.keys(acc).forEach(key => {
+    const vals = acc[key];
+    const v = (METRICS[key].agg === 'sum') ? vals.reduce((a,b)=>a+b,0) : vals.reduce((a,b)=>a+b,0)/vals.length;
+    if(setPoint(date, key, v, 'import')){ added++; dates.add(date); }
+  });
+  return {added, dates:Array.from(dates)};
+}
+
+/* ייבוא גיבוי JSON של האפליקציה */
+function importJson(text){
+  const j = JSON.parse(text);
+  const src = j.data || j;
+  let added = 0;
+  Object.keys(src).forEach(date => {
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const day = src[date];
+    Object.keys(day).forEach(metric => {
+      const cell = day[metric];
+      const v = (cell && typeof cell === 'object') ? cell.v : cell;
+      const s = (cell && typeof cell === 'object' && cell.s) ? cell.s : 'import';
+      if(setPoint(date, metric, v, s)) added++;
+    });
+  });
+  if(j.settings) { SET = {...SET, ...j.settings, clientId: SET.clientId || j.settings.clientId || ''}; saveSettings(); }
+  return added;
+}
+
+function logImport(msg, kind){
+  const box = $('#importLog');
+  const div = document.createElement('div');
+  div.className = 'note' + (kind === 'err' ? ' warn' : '');
+  div.style.marginBottom = '8px';
+  div.innerHTML = msg;
+  box.prepend(div);
+}
+
+async function handleFiles(files){
+  let grand = 0;
+  for(const file of files){
+    try{
+      const lower = file.name.toLowerCase();
+      if(lower.endsWith('.zip')){
+        const zip = await readZip(file);
+        const candidates = zip.entries.filter(e =>
+          /\.(csv|tsv)$/i.test(e.name) && !/\/$/.test(e.name) &&
+          /(fit|activity|health|daily|נתוני|פעילות|בריאות)/i.test(e.name));
+        const list = candidates.length ? candidates : zip.entries.filter(e => /\.(csv|tsv)$/i.test(e.name));
+        if(!list.length){ logImport('בקובץ <strong>'+esc(file.name)+'</strong> לא נמצאו קובצי CSV מתאימים.', 'err'); continue; }
+        /* קודם קבצים מרוכזים (עם עמודת תאריך), ואם אין — קבצים יומיים */
+        const aggregated = list.filter(e => !/\d{4}-\d{2}-\d{2}\.(csv|tsv)$/i.test(e.name));
+        const daily      = list.filter(e =>  /\d{4}-\d{2}-\d{2}\.(csv|tsv)$/i.test(e.name));
+        let sum = 0, filesRead = 0;
+        const covered = new Set();
+        for(const e of aggregated){
+          try{
+            const r = importDelimited(e.name, await zipText(zip, e));
+            sum += r.added; if(r.added) filesRead++;
+            r.dates.forEach(d => covered.add(d));
+          }catch(err){ console.warn(e.name, err); }
+        }
+        /* קבצים יומיים — רק לתאריכים שהקובץ המרוכז לא כיסה, כדי לא לספור פעמיים */
+        for(const e of daily){
+          const fm = e.name.match(/(\d{4}-\d{2}-\d{2})/);
+          if(fm && covered.has(fm[1])) continue;
+          try{
+            const r = importDelimited(e.name, await zipText(zip, e));
+            sum += r.added; if(r.added) filesRead++;
+          }catch(err){ console.warn(e.name, err); }
+        }
+        grand += sum;
+        logImport(sum ? '✅ <strong>'+esc(file.name)+'</strong> — יובאו <strong>'+fmtNum(sum,0)+'</strong> מדידות מתוך '+filesRead+' קבצים.'
+                      : '⚠️ <strong>'+esc(file.name)+'</strong> — לא זוהו נתונים מוכרים בקובץ.', sum ? '' : 'err');
+      } else {
+        const text = await file.text();
+        const isJson = lower.endsWith('.json') || /^[\s﻿]*[{[]/.test(text);
+        if(isJson){
+          const n = importJson(text);
+          grand += n;
+          logImport(n ? '✅ <strong>'+esc(file.name)+'</strong> — שוחזרו <strong>'+fmtNum(n,0)+'</strong> מדידות.'
+                      : '⚠️ <strong>'+esc(file.name)+'</strong> — לא נמצאו רשומות.', n ? '' : 'err');
+        } else {
+          const n = importDelimited(file.name, text).added;
+          grand += n;
+          logImport(n ? '✅ <strong>'+esc(file.name)+'</strong> — יובאו <strong>'+fmtNum(n,0)+'</strong> מדידות.'
+                      : '⚠️ <strong>'+esc(file.name)+'</strong> — לא זוהו עמודות מוכרות.', n ? '' : 'err');
+        }
+      }
+    }catch(err){
+      console.error(err);
+      logImport('❌ <strong>'+esc(file.name)+'</strong> — שגיאה: ' + esc(err.message), 'err');
+    }
+  }
+  if(grand){ saveData(); renderAll(); toast('יובאו ' + fmtNum(grand,0) + ' מדידות', 'ok'); }
+  else toast('לא יובאו נתונים', 'err');
+}
+
+/* ============================ ייצוא ============================ */
+function download(filename, content, type){
+  const blob = new Blob([content], {type: type || 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function exportJson(){
+  const payload = {app:'מידע חיוני', version:1, exported: new Date().toISOString(), settings: SET, data: DATA};
+  download('vitals-backup-' + todayStr() + '.json', JSON.stringify(payload, null, 2), 'application/json');
+  toast('קובץ הגיבוי הורד', 'ok');
+}
+function exportCsv(){
+  const keys = METRIC_KEYS.filter(k => Object.keys(DATA).some(d => DATA[d][k] !== undefined));
+  const head = ['תאריך'].concat(keys.map(k => METRICS[k].label + ' (' + METRICS[k].unit + ')'));
+  const lines = [head.join(',')];
+  Object.keys(DATA).sort().forEach(d => {
+    lines.push([d].concat(keys.map(k => DATA[d][k] !== undefined ? DATA[d][k].v : '')).join(','));
+  });
+  download('vitals-' + todayStr() + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  toast('קובץ ה-CSV הורד', 'ok');
+}
+
+/* ========================= נתוני הדגמה ========================= */
+function loadDemo(){
+  const days = 90, base = {steps:8200, calories:2150, distance:6.1, active:34, heart_pts:22, heart_rate:71, sleep:7.1, weight:78.4, spo2:97};
+  for(let i = days - 1; i >= 0; i--){
+    const d = addDays(new Date(), -i), date = ymd(d), dow = d.getDay();
+    const wknd = (dow === 5 || dow === 6) ? 0.78 : 1;
+    const wave = 1 + Math.sin(i / 9) * 0.12;
+    const rnd  = () => 0.88 + Math.random() * 0.24;
+    setPoint(date, 'steps',      Math.round(base.steps * wknd * wave * rnd()), 'demo');
+    setPoint(date, 'calories',   Math.round(base.calories * wave * rnd()), 'demo');
+    setPoint(date, 'distance',   +(base.distance * wknd * wave * rnd()).toFixed(2), 'demo');
+    setPoint(date, 'active',     Math.round(base.active * wknd * rnd()), 'demo');
+    setPoint(date, 'heart_pts',  Math.round(base.heart_pts * wknd * rnd()), 'demo');
+    setPoint(date, 'heart_rate', Math.round(base.heart_rate * (0.96 + Math.random() * 0.09)), 'demo');
+    setPoint(date, 'sleep',      +(base.sleep * (0.9 + Math.random() * 0.2)).toFixed(1), 'demo');
+    setPoint(date, 'spo2',       Math.round(base.spo2 - Math.random() * 2), 'demo');
+    if(i % 3 === 0) setPoint(date, 'weight', +(base.weight - (days - i) * 0.012 + (Math.random() - 0.5) * 0.5).toFixed(1), 'demo');
+    if(i % 7 === 0){
+      setPoint(date, 'bp_sys', Math.round(118 + Math.random() * 10), 'demo');
+      setPoint(date, 'bp_dia', Math.round(74 + Math.random() * 8), 'demo');
+      setPoint(date, 'glucose', Math.round(88 + Math.random() * 18), 'demo');
+    }
+  }
+  saveData(); renderAll();
+  toast('נטענו נתוני הדגמה ל-90 יום', 'ok');
+}
+
+/* ============================ ניווט ותצוגה ============================ */
+function showView(name){
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function applyTheme(){
+  const t = SET.theme || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', t);
+  $('#themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+  const meta = document.querySelector('meta[name=theme-color]');
+  if(meta) meta.setAttribute('content', t === 'dark' ? '#0b1220' : '#0f766e');
+}
+
+/* -------------------------- רישום ידני -------------------------- */
+function fillMetricSelect(){
+  const sel = $('#mMetric');
+  sel.innerHTML = CARD_ORDER.filter(k => METRICS[k] && !METRICS[k].hideCard)
+    .map(k => '<option value="'+k+'">'+METRICS[k].icon+' '+esc(METRICS[k].label)+' ('+esc(METRICS[k].unit)+')</option>').join('');
+  onMetricChange();
+}
+function onMetricChange(){
+  const key = $('#mMetric').value, m = METRICS[key];
+  $('#mValueLabel').textContent = 'ערך (' + m.unit + ')';
+  $('#mValue2Wrap').style.display = m.pair ? 'block' : 'none';
+  $('#mValue').placeholder = ({steps:'8500', weight:'78.4', sleep:'7.5', bp_sys:'120', glucose:'95', spo2:'97'})[key] || '';
+}
+function saveManual(){
+  const key = $('#mMetric').value, m = METRICS[key];
+  const date = $('#mDate').value || todayStr();
+  const v = parseFloat($('#mValue').value);
+  if(!isFinite(v)){ toast('צריך להזין ערך מספרי', 'err'); $('#mValue').focus(); return; }
+  setPoint(date, key, v, 'manual');
+  if(m.pair){
+    const v2 = parseFloat($('#mValue2').value);
+    if(isFinite(v2)) setPoint(date, m.pair, v2, 'manual');
+  }
+  saveData(); renderAll();
+  $('#mValue').value = ''; $('#mValue2').value = '';
+  toast('נשמר: ' + m.label + ' · ' + fmtDateFull(date), 'ok');
+}
+
+/* ---------------------------- אתחול ---------------------------- */
+function bindUi(){
+  /* לשוניות */
+  $$('.tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
+
+  /* טווחי זמן */
+  $$('#rangeBar .chip').forEach(c => c.addEventListener('click', () => {
+    $$('#rangeBar .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active'); RANGE = +c.dataset.days; renderDash();
+  }));
+  $$('#rangeBar2 .chip').forEach(c => c.addEventListener('click', () => {
+    $$('#rangeBar2 .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active'); RANGE_T = +c.dataset.days; renderCharts();
+  }));
+
+  /* מעבר מכרטיס מדד לגרף המתאים */
+  $('#metricCards').addEventListener('click', e => {
+    const card = e.target.closest('.metric');
+    if(!card) return;
+    showView('trends');
+    setTimeout(() => {
+      const el = document.getElementById('chart-' + card.dataset.metric);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 120);
+  });
+
+  /* ערכת נושא */
+  $('#themeBtn').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    SET.theme = cur === 'dark' ? 'light' : 'dark';
+    saveSettings(); applyTheme(); renderCharts();
+  });
+
+  /* סנכרון */
+  $('#connectBtn').addEventListener('click', () => isConnected() ? syncNow() : connectFit());
+  $('#connectBtn2').addEventListener('click', connectFit);
+  $('#syncBtn').addEventListener('click', () => isConnected() ? syncNow() : connectFit());
+  $('#syncBtn2').addEventListener('click', () => isConnected() ? syncNow() : connectFit());
+  $('#disconnectBtn').addEventListener('click', disconnectFit);
+  $('#clientId').addEventListener('change', e => {
+    SET.clientId = e.target.value.trim(); saveSettings(); tokenClient = null;
+    if(SET.clientId) toast('מזהה הלקוח נשמר');
+  });
+
+  /* ייבוא */
+  const dz = $('#dropZone'), fi = $('#fileInput');
+  $('#pickFile').addEventListener('click', e => { e.preventDefault(); fi.click(); });
+  dz.addEventListener('click', e => { if(e.target === dz || e.target.tagName === 'SPAN') fi.click(); });
+  fi.addEventListener('change', () => { if(fi.files.length) handleFiles(Array.from(fi.files)); fi.value = ''; });
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('hot'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('hot'); }));
+  dz.addEventListener('drop', e => {
+    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+    if(files.length) handleFiles(files);
+  });
+
+  /* רישום ידני */
+  $('#mMetric').addEventListener('change', onMetricChange);
+  $('#mSave').addEventListener('click', saveManual);
+  $('#mToday').addEventListener('click', () => { $('#mDate').value = todayStr(); });
+  $('#mValue').addEventListener('keydown', e => { if(e.key === 'Enter') saveManual(); });
+  $('#logTable').addEventListener('click', e => {
+    const b = e.target.closest('.row-del');
+    if(!b) return;
+    if(delPoint(b.dataset.date, b.dataset.metric)){ renderAll(); toast('הרשומה נמחקה'); }
+  });
+  $('#logMore').addEventListener('click', () => { LOG_LIMIT += 100; renderLog(); });
+
+  /* הגדרות */
+  $('#saveSettings').addEventListener('click', () => {
+    ['goalSteps','goalSleep','goalCalories','goalWater','goalActive','userHeight'].forEach(k => {
+      const el = document.getElementById(k);
+      if(el && el.value !== '') SET[k] = parseFloat(el.value);
+    });
+    saveSettings(); renderAll(); toast('ההגדרות נשמרו', 'ok');
+  });
+  $('#exportJson').addEventListener('click', exportJson);
+  $('#exportCsv').addEventListener('click', exportCsv);
+  $('#demoBtn').addEventListener('click', () => {
+    if(hasAnyData() && !confirm('פעולה זו תוסיף נתוני הדגמה ל-90 הימים האחרונים ותדרוס נתונים קיימים באותם ימים. להמשיך?')) return;
+    loadDemo();
+  });
+  $('#wipeBtn').addEventListener('click', () => {
+    if(!confirm('למחוק את כל הנתונים השמורים במכשיר? הפעולה בלתי הפיכה. מומלץ לשמור גיבוי JSON קודם.')) return;
+    DATA = {}; localStorage.removeItem(LS_DATA);
+    renderAll(); toast('כל הנתונים נמחקו');
+  });
+}
+
+function fillSettingsInputs(){
+  ['goalSteps','goalSleep','goalCalories','goalWater','goalActive','userHeight'].forEach(k => {
+    const el = document.getElementById(k);
+    if(el) el.value = SET[k] || '';
+  });
+  $('#clientId').value = SET.clientId || '';
+  $('#originVal').textContent = location.origin === 'null' ? '(פתיחה מקובץ מקומי — נדרש שרת/אתר)' : location.origin;
+}
+
+function init(){
+  loadAll();
+  applyTheme();
+  fillSettingsInputs();
+  fillMetricSelect();
+  $('#mDate').value = todayStr();
+  $('#mDate').max = todayStr();
+  bindUi();
+  loadToken();
+  refreshSyncUi();
+  renderAll();
+  /* רענון תצוגת תוקף החיבור מדי דקה */
+  setInterval(refreshSyncUi, 60000);
+}
+
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+</script>
+</body>
+</html>

@@ -371,58 +371,14 @@ li{margin-bottom:5px}
 
   <!-- ============ סנכרון וייבוא ============ -->
   <section class="view" id="view-sync">
-    <div class="section-head"><h2>סנכרון מ-Google&nbsp;Fit</h2></div>
+    <div class="section-head"><h2>ייבוא נתונים</h2><span class="hint">Takeout · CSV · גיבוי</span></div>
 
-    <div class="note warn" style="margin-bottom:12px">
-      <strong>שימו לב:</strong> גוגל סגרה את ה-API של Google&nbsp;Fit למפתחים חדשים (מ-1 במאי 2024) והשירות בתהליך כיבוי במהלך 2026.
-      הסנכרון הישיר יעבוד רק אם יש לך פרויקט ב-Google&nbsp;Cloud שבו ה-Fitness&nbsp;API כבר מופעל.
-      אם הסנכרון נכשל — אפשר לייבא את כל ההיסטוריה דרך <strong>Google&nbsp;Takeout</strong> למטה, וזו גם הדרך היציבה לטווח ארוך.
+    <div class="note" style="margin-bottom:12px">
+      זו הדרך המומלצת, והיחידה שעובדת ללא פרויקט מפתחים קיים ב-Google&nbsp;Cloud:
+      מורידים מגוגל את היסטוריית הבריאות שלך כקובץ, וגוררים אותו לכאן.
+      הקריאה מתבצעת בדפדפן בלבד — הקובץ לא מועלה לשום מקום.
     </div>
 
-    <div class="card">
-      <label class="fld" for="clientId">מזהה לקוח OAuth (Client&nbsp;ID)</label>
-      <input type="text" id="clientId" dir="ltr" placeholder="123456789-abc.apps.googleusercontent.com" autocomplete="off">
-      <div class="kv" style="margin-top:10px">
-        <span class="k">מקור מורשה להוספה ב-Google Cloud</span>
-        <span class="v" id="originVal" dir="ltr" style="font-size:.78rem"></span>
-      </div>
-      <div class="btn-row" style="margin-top:14px">
-        <button class="btn" id="connectBtn2">התחברות ל-Google Fit</button>
-        <button class="btn ghost" id="syncBtn2">סנכרון עכשיו</button>
-        <button class="btn ghost" id="disconnectBtn">ניתוק</button>
-      </div>
-      <div class="kv" style="margin-top:12px">
-        <span class="k">סנכרון אחרון</span><span class="v" id="lastSyncVal">—</span>
-      </div>
-      <div class="kv">
-        <span class="k">טווח משיכה</span>
-        <span class="v">
-          <select id="syncDays" style="width:auto;padding:5px 10px;font-size:.82rem">
-            <option value="7">7 ימים</option>
-            <option value="30" selected>30 יום</option>
-            <option value="90">90 יום</option>
-            <option value="365">שנה</option>
-            <option value="1095">3 שנים</option>
-          </select>
-        </span>
-      </div>
-
-      <details class="acc">
-        <summary>איך מפיקים Client ID (מדריך קצר)</summary>
-        <div class="body">
-          <ol>
-            <li>נכנסים ל-<code>console.cloud.google.com</code> ובוחרים פרויקט קיים שבו ה-Fitness API מופעל.</li>
-            <li>ב-<strong>APIs &amp; Services → Credentials</strong> יוצרים <code>OAuth client ID</code> מסוג <strong>Web application</strong>.</li>
-            <li>תחת <strong>Authorized JavaScript origins</strong> מוסיפים את המקור המוצג למעלה.</li>
-            <li>במסך ההסכמה (OAuth consent screen) מוסיפים את כתובת המייל שלך כ-<strong>Test user</strong>.</li>
-            <li>מעתיקים את ה-Client ID לשדה שלמעלה ולוחצים "התחברות".</li>
-          </ol>
-          <p style="margin-top:8px">האסימון נשמר בזיכרון הדפדפן בלבד (sessionStorage) ופג אחרי כשעה. שום נתון לא נשלח לשרת חיצוני — הכול נשאר במכשיר.</p>
-        </div>
-      </details>
-    </div>
-
-    <div class="section-head"><h2>ייבוא קובץ</h2><span class="hint">Takeout · Health Connect · CSV · גיבוי</span></div>
     <div class="card">
       <div class="drop" id="dropZone">
         <span class="big">📥</span>
@@ -431,22 +387,97 @@ li{margin-bottom:5px}
         <input type="file" id="fileInput" accept=".zip,.csv,.tsv,.json,.txt" style="display:none" multiple>
       </div>
       <div id="importLog" style="margin-top:12px"></div>
-      <details class="acc">
-        <summary>איך מורידים את הנתונים מ-Google Takeout</summary>
+
+      <details class="acc" open>
+        <summary>מדריך: הורדת הנתונים מ-Google Takeout</summary>
         <div class="body">
           <ol>
-            <li>נכנסים ל-<code>takeout.google.com</code> עם אותו חשבון גוגל.</li>
-            <li>לוחצים "בטל בחירת הכול" ומסמנים רק את <strong>Fit</strong> (או <strong>Health Connect</strong>, אם קיים).</li>
-            <li>מייצאים בפורמט ZIP וממתינים למייל עם הקישור.</li>
-            <li>מורידים את ה-ZIP וגוררים אותו לכאן — האפליקציה תקרא את התיקייה
-              <code>Daily activity metrics</code> ותוסיף את כל הימים.</li>
+            <li>נכנסים ל-<a href="https://takeout.google.com" target="_blank" rel="noopener">takeout.google.com</a> עם חשבון הגוגל שבו נמצאים נתוני הכושר.</li>
+            <li>לוחצים <strong>"ביטול הבחירה של הכול"</strong> (Deselect all) — כדי לא להוריד את כל גוגל.</li>
+            <li>גוללים ומסמנים רק את <strong>Fit</strong>. אם אינו מופיע ברשימה, מסמנים
+                <strong>Health&nbsp;Connect</strong> או <strong>Google&nbsp;Health</strong>.</li>
+            <li>לוחצים <strong>"השלב הבא"</strong>, בוחרים שליחה במייל, סוג קובץ <strong>.zip</strong>, וגודל 2GB.</li>
+            <li>לוחצים <strong>"יצירת ייצוא"</strong>. גוגל שולחת מייל עם קישור — בדרך כלל תוך דקות, לפעמים עד יממה.</li>
+            <li>מורידים את ה-ZIP <strong>כמו שהוא</strong> (בלי לפתוח או לחלץ) וגוררים אותו לאזור למעלה.</li>
           </ol>
-          <p style="margin-top:8px">הקובץ נקרא מקומית בדפדפן ואינו מועלה לשום מקום.</p>
+          <p style="margin-top:10px">
+            <strong>טיפ לעדכון שוטף:</strong> באותו מסך אפשר לבחור בשלב "תדירות"
+            <strong>"ייצוא כל חודשיים, במשך שנה"</strong> — וגוגל תשלח קובץ מעודכן אוטומטית,
+            כך שרק צריך לגרור אותו לכאן. אפשר גם לבחור שמירה ישירות ל-Google&nbsp;Drive במקום מייל.
+          </p>
+        </div>
+      </details>
+
+      <details class="acc">
+        <summary>אין לך נתונים בגוגל? אפשרויות נוספות</summary>
+        <div class="body">
+          <ul>
+            <li><strong>Health Connect באנדרואיד</strong> — בהגדרות המכשיר:
+                אבטחה ופרטיות ← Health&nbsp;Connect ← גיבוי ושחזור ← ייצוא. חשוב לדעת: הייצוא הזה יוצר
+                ZIP שבתוכו קובץ מסד נתונים (SQLite) ולא CSV, ולכן האפליקציה עדיין לא קוראת אותו ישירות —
+                לצורך כך עדיף Takeout.</li>
+            <li><strong>אפליקציות שעון/שעון חכם</strong> (Garmin, Polar, Zepp, Huawei Health ועוד) —
+                לרובן יש ייצוא CSV בהגדרות. כל CSV עם עמודת תאריך ועמודות מוכרות ייקרא כאן.</li>
+            <li><strong>רישום ידני</strong> — לשונית "יומן", מתאים למשקל, לחץ דם, סוכר ומדידות נקודתיות.</li>
+            <li><strong>נתוני הדגמה</strong> — בלשונית "הגדרות", כדי לראות איך הכול נראה לפני שיש נתונים אמיתיים.</li>
+          </ul>
         </div>
       </details>
     </div>
-  </section>
 
+    <div class="section-head"><h2>סנכרון ישיר מ-Google&nbsp;Fit</h2><span class="hint">מתקדם</span></div>
+    <details class="acc" id="oauthBox">
+      <summary>הגדרת סנכרון אוטומטי (דורש פרויקט Google Cloud קיים)</summary>
+      <div class="body">
+        <div class="note warn" style="margin-bottom:12px">
+          גוגל סגרה את ה-API של Google&nbsp;Fit למפתחים חדשים ב-1 במאי 2024, והשירות בתהליך כיבוי במהלך 2026.
+          <strong>אם אין לך כבר פרויקט ב-Google&nbsp;Cloud שבו ה-Fitness&nbsp;API מופעל — לא ניתן להפעיל אותו כעת,
+          וצריך להשתמש בייבוא מ-Takeout שלמעלה.</strong>
+        </div>
+
+        <label class="fld" for="clientId">מזהה לקוח OAuth (Client&nbsp;ID)</label>
+        <input type="text" id="clientId" dir="ltr" placeholder="123456789-abc.apps.googleusercontent.com" autocomplete="off">
+        <div class="kv" style="margin-top:10px">
+          <span class="k">מקור מורשה להוספה ב-Google Cloud</span>
+          <span class="v" id="originVal" dir="ltr" style="font-size:.78rem"></span>
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn" id="connectBtn2">התחברות ל-Google Fit</button>
+          <button class="btn ghost" id="syncBtn2">סנכרון עכשיו</button>
+          <button class="btn ghost" id="disconnectBtn">ניתוק</button>
+        </div>
+        <div class="kv" style="margin-top:12px">
+          <span class="k">סנכרון אחרון</span><span class="v" id="lastSyncVal">—</span>
+        </div>
+        <div class="kv">
+          <span class="k">טווח משיכה</span>
+          <span class="v">
+            <select id="syncDays" style="width:auto;padding:5px 10px;font-size:.82rem">
+              <option value="7">7 ימים</option>
+              <option value="30" selected>30 יום</option>
+              <option value="90">90 יום</option>
+              <option value="365">שנה</option>
+              <option value="1095">3 שנים</option>
+            </select>
+          </span>
+        </div>
+
+        <details class="acc">
+          <summary>איך מפיקים Client ID (בפרויקט קיים בלבד)</summary>
+          <div class="body">
+            <ol>
+              <li>נכנסים ל-<code>console.cloud.google.com</code> ובוחרים פרויקט שבו ה-Fitness API כבר מופעל.</li>
+              <li>ב-<strong>APIs &amp; Services → Credentials</strong> יוצרים <code>OAuth client ID</code> מסוג <strong>Web application</strong>.</li>
+              <li>תחת <strong>Authorized JavaScript origins</strong> מוסיפים את המקור המוצג למעלה.</li>
+              <li>במסך ההסכמה (OAuth consent screen) מוסיפים את כתובת המייל שלך כ-<strong>Test user</strong>.</li>
+              <li>מעתיקים את ה-Client ID לשדה שלמעלה ולוחצים "התחברות".</li>
+            </ol>
+            <p style="margin-top:8px">האסימון נשמר בזיכרון הדפדפן בלבד (sessionStorage) ופג אחרי כשעה. שום נתון לא נשלח לשרת חיצוני — הכול נשאר במכשיר.</p>
+          </div>
+        </details>
+      </div>
+    </details>
+  </section>
   <!-- ============ הגדרות ============ -->
   <section class="view" id="view-settings">
     <div class="section-head"><h2>יעדים אישיים</h2></div>
@@ -932,11 +963,11 @@ function storeToken(access_token, expires_in){
 function clearToken(){ TOKEN = null; try{ sessionStorage.removeItem(SS_TOK); }catch(e){} }
 function isConnected(){ return !!(TOKEN && TOKEN.exp > Date.now()); }
 
-function setSyncUi(state, text){
+function setSyncUi(state, text, btnLabel){
   const dot = $('#syncDot');
   dot.className = 'dot ' + (state === 'on' ? 'on' : state === 'off' ? 'off' : '');
   $('#syncText').textContent = text;
-  $('#connectBtn').textContent = state === 'on' ? 'סנכרון' : 'חיבור';
+  $('#connectBtn').textContent = btnLabel || (state === 'on' ? 'סנכרון' : 'חיבור');
 }
 function refreshSyncUi(){
   if(isConnected()){
@@ -944,9 +975,19 @@ function refreshSyncUi(){
     setSyncUi('on', 'מחובר ל-Google Fit · תוקף החיבור ' + mins + ' דק׳');
   } else if(SET.lastSync){
     setSyncUi('', 'סנכרון אחרון: ' + new Date(SET.lastSync).toLocaleString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}));
+  } else if(!(SET.clientId || '').trim()){
+    /* אין פרויקט Google Cloud — המסלול הפעיל הוא ייבוא קובץ */
+    setSyncUi('off', 'הנתונים נטענים מקובץ Takeout או ברישום ידני', 'ייבוא נתונים');
   } else {
     setSyncUi('off', 'לא מחובר ל-Google Fit');
   }
+}
+/* לחיצה על "חיבור" בראש המסך — מפנה למסלול הרלוונטי */
+function primaryAction(){
+  if(isConnected()) return syncNow();
+  if((SET.clientId || '').trim()) return connectFit();
+  showView('sync');
+  setTimeout(() => { const d = $('#dropZone'); if(d) d.scrollIntoView({behavior:'smooth', block:'center'}); }, 150);
 }
 
 function ensureTokenClient(){
@@ -957,7 +998,9 @@ function ensureTokenClient(){
   const cid = (SET.clientId || '').trim();
   if(!cid){
     toast('צריך להזין קודם Client ID בלשונית "סנכרון וייבוא"', 'err');
-    showView('sync'); $('#clientId').focus();
+    showView('sync');
+    const box = $('#oauthBox'); if(box) box.open = true;
+    $('#clientId').focus();
     return null;
   }
   if(!tokenClient || tokenClient.__cid !== cid){
@@ -1510,13 +1553,13 @@ function bindUi(){
   });
 
   /* סנכרון */
-  $('#connectBtn').addEventListener('click', () => isConnected() ? syncNow() : connectFit());
+  $('#connectBtn').addEventListener('click', primaryAction);
   $('#connectBtn2').addEventListener('click', connectFit);
-  $('#syncBtn').addEventListener('click', () => isConnected() ? syncNow() : connectFit());
+  $('#syncBtn').addEventListener('click', primaryAction);
   $('#syncBtn2').addEventListener('click', () => isConnected() ? syncNow() : connectFit());
   $('#disconnectBtn').addEventListener('click', disconnectFit);
   $('#clientId').addEventListener('change', e => {
-    SET.clientId = e.target.value.trim(); saveSettings(); tokenClient = null;
+    SET.clientId = e.target.value.trim(); saveSettings(); tokenClient = null; refreshSyncUi();
     if(SET.clientId) toast('מזהה הלקוח נשמר');
   });
 

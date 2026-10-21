@@ -68,6 +68,10 @@ button, input, select { font-family: inherit; font-size: 1rem; }
 }
 .app-header h1 { font-size: 1.25rem; font-weight: 900; line-height: 1.15; }
 .app-header .sub { font-size: 0.8rem; opacity: 0.85; }
+.install-btn {
+  margin-right: auto; border: none; background: var(--yellow); color: var(--navy); font-weight: 900;
+  border-radius: 12px; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;
+}
 
 main { max-width: 900px; margin: 0 auto; padding: 14px 14px 0; }
 
@@ -267,6 +271,7 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
     <h1>הפוקדקס של ניתאי עשור</h1>
     <div class="sub">אוסף קלפי הפוקימון שלי ⚡</div>
   </div>
+  <button class="install-btn" id="btnInstall" hidden>📲 התקן</button>
 </header>
 
 <main>
@@ -1868,6 +1873,42 @@ renderRatesInfo();
 refreshRates().then(() => { if (currentView === 'collection') renderCollection(); });
 renderCollection();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+/* ---- Install as an app on the phone ---- */
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installPrompt = null;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch((e) => console.warn('sw', e));
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  $('#btnInstall').hidden = false;
+});
+window.addEventListener('appinstalled', () => { $('#btnInstall').hidden = true; toast('האפליקציה הותקנה! 🎉'); });
+if (!isStandalone() && /iphone|ipad|ipod/i.test(navigator.userAgent)) $('#btnInstall').hidden = false;
+$('#btnInstall').addEventListener('click', async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice.catch(() => null);
+    if (choice && choice.outcome === 'accepted') $('#btnInstall').hidden = true;
+    installPrompt = null;
+    return;
+  }
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+    <button class="close" aria-label="סגור">✕</button>
+    <h2 style="margin-bottom:12px">📲 התקנה בטלפון</h2>
+    <ol style="padding-right:20px;line-height:2">
+      <li>פתח את הדף הזה ב-<b>Safari</b></li>
+      <li>לחץ על כפתור השיתוף <b>⬆️</b> בתחתית המסך</li>
+      <li>בחר <b>"הוסף למסך הבית"</b></li>
+      <li>לחץ <b>"הוסף"</b> – והפוקדקס יופיע עם אייקון כמו אפליקציה רגילה!</li>
+    </ol>
+  </div>`;
+  const close = () => bg.remove();
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('.close')) close(); });
+  document.body.appendChild(bg);
+});
 </script>
 </body>
 </html>

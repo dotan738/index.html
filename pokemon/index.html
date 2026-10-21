@@ -378,6 +378,72 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
   .modal-bg { align-items: center; }
   .modal { border-radius: 22px; }
 }
+/* ================= Design refresh ================= */
+body {
+  background:
+    radial-gradient(circle at 100% 0, rgba(255, 203, 5, 0.18), transparent 40%),
+    radial-gradient(circle at 0 30%, rgba(42, 117, 187, 0.10), transparent 45%),
+    var(--bg);
+  background-attachment: fixed;
+}
+.app-header {
+  background: linear-gradient(120deg, #ff4f2b 0%, var(--red) 45%, var(--red-dark) 100%);
+  overflow: hidden;
+}
+.app-header::after {
+  content: ''; position: absolute; left: -40px; top: -50px; width: 170px; height: 170px; border-radius: 50%;
+  border: 22px solid rgba(255, 255, 255, 0.08); pointer-events: none;
+}
+.app-header h1 { letter-spacing: -0.3px; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
+.panel { border-radius: 20px; border: 1px solid rgba(29, 44, 94, 0.05); }
+.btn { box-shadow: 0 2px 6px rgba(29, 44, 94, 0.12); }
+.btn-ghost { box-shadow: none; }
+
+/* stats: hero value card + two small counters */
+.stats { grid-template-columns: 1fr 1fr; }
+.stat { border-radius: 16px; }
+.stat.value {
+  grid-column: 1 / -1; padding: 16px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--navy) 0%, #2d4a8a 60%, var(--blue) 100%); color: #fff;
+}
+.stat.value::after {
+  content: '⚡'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%) rotate(-12deg);
+  font-size: 3.4rem; opacity: 0.18;
+}
+.stat.value .num { color: var(--yellow); font-size: 2.3rem; line-height: 1.15; }
+.stat.value .lbl { color: rgba(255, 255, 255, 0.85); font-size: 0.85rem; margin: 0 0 2px; }
+
+/* card tiles */
+.grid { gap: 14px; }
+.tile { border-radius: 16px; padding: 6px; box-shadow: 0 6px 18px rgba(29, 44, 94, 0.13); transition: transform .15s, box-shadow .15s; }
+.tile .img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; border-radius: 10px; background: linear-gradient(135deg, #eef1f7, #dfe5f0); }
+.tile .info { padding: 8px 4px 4px; }
+.tile .val { display: inline-block; background: #e3f7ea; color: #15803d; border-radius: 8px; padding: 2px 8px; font-size: 0.88rem; }
+.tile.shiny { background: linear-gradient(135deg, #ffe259, #ff9a9e, #a18cd1, #84fab0, #8fd3f4); }
+.tile.shiny .info { background: #fff; border-radius: 0 0 10px 10px; margin: -4px 0 0; padding: 8px 8px 6px; }
+.tile.shiny .img { border-radius: 10px 10px 0 0; }
+.tile .qty { top: 12px; left: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+
+/* sub tabs as a segmented control */
+.subtabs { background: #fff; padding: 4px; border-radius: 14px; box-shadow: var(--shadow); gap: 2px; }
+.subtabs button { box-shadow: none; background: transparent; border-radius: 10px; }
+.subtabs button.on { background: var(--navy); color: #fff; box-shadow: 0 2px 6px rgba(29,44,94,.3); }
+
+/* bottom nav: pill behind the active icon */
+.bottom-nav { border-top: none; box-shadow: 0 -4px 20px rgba(29, 44, 94, 0.10); border-radius: 18px 18px 0 0; }
+.bottom-nav button .ico { padding: 4px 14px; border-radius: 14px; transition: background .2s; }
+.bottom-nav button.active .ico { background: rgba(227, 53, 13, 0.12); }
+.bottom-nav button.scan-btn .ico { padding: 0; }
+.bottom-nav button.scan-btn.active .ico { background: var(--yellow); box-shadow: 0 0 0 4px rgba(255, 203, 5, 0.35), 0 3px 10px rgba(0,0,0,.2); }
+
+/* value box on the result screen */
+.value-box { background: linear-gradient(135deg, #fff6c7, #ffe57a 60%, #ffd23f); border: none; box-shadow: 0 6px 18px rgba(255, 180, 0, 0.3); }
+.value-box .big { font-size: 2.6rem; }
+
+/* candidate cards */
+.cand { border-radius: 14px; box-shadow: 0 3px 10px rgba(29,44,94,.10); transition: transform .12s; }
+.cand:active { transform: scale(0.97); }
+.cand.best { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,157,85,.25), 0 6px 16px rgba(29,44,94,.15); }
 </style>
 </head>
 <body>
@@ -398,9 +464,9 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
   <!-- ===== Collection ===== -->
   <section id="view-collection">
     <div class="stats">
+      <div class="stat value"><div class="lbl">💰 שווי האוסף שלי</div><div class="num" id="statValue">₪0</div></div>
       <div class="stat"><div class="num" id="statCount">0</div><div class="lbl">קלפים</div></div>
       <div class="stat"><div class="num" id="statUnique">0</div><div class="lbl">קלפים שונים</div></div>
-      <div class="stat value"><div class="num" id="statValue">₪0</div><div class="lbl">שווי האוסף</div></div>
     </div>
     <div class="subtabs" id="collTabs">
       <button data-ctab="cards" class="on">🃏 קלפים</button>
@@ -937,7 +1003,36 @@ async function tcgdexSearch({ name, number, total }) {
 }
 
 async function refetchCard(card) {
-  return card.src === 'tcgdex' ? tcgdexGet(card.id) : ptcgGet(card.id);
+  const fresh = card.src === 'tcgdex' ? await tcgdexGet(card.id) : await ptcgGet(card.id);
+  return enrichPrices(fresh);
+}
+
+const hasPrices = (card) => {
+  const p = card && card.prices;
+  if (!p) return false;
+  if (Object.values(p.tcg || {}).some(v => v && (v.market || v.mid || v.low))) return true;
+  return !!(p.cm && (p.cm.trend || p.cm.avg30 || p.cm.avg || p.cm.low));
+};
+
+/* pokemontcg.io sometimes returns a card without prices (its data is moving to a new service).
+   In that case look up the same card (same number + same set) in TCGdex and take its prices. */
+const priceCache = new Map();
+async function enrichPrices(card) {
+  if (!card || hasPrices(card) || card.src === 'tcgdex') return card;
+  if (priceCache.has(card.id)) return { ...card, prices: priceCache.get(card.id) };
+  try {
+    const found = await tcgdexSearch({ name: card.name, number: card.number, total: card.setTotal });
+    const n = stripZeros(card.number).toUpperCase();
+    const match = found.find(c => stripZeros(c.number).toUpperCase() === n && hasPrices(c) &&
+      ((card.setTotal && c.setTotal === card.setTotal) || nameSimilarity(c.setName, card.setName) > 0.8));
+    if (!match) return card;
+    const prices = { ...match.prices, tcgUrl: card.prices && card.prices.tcgUrl, cmUrl: card.prices && card.prices.cmUrl, via: 'TCGdex' };
+    priceCache.set(card.id, prices);
+    return { ...card, prices };
+  } catch (e) {
+    console.warn('price fallback failed', e);
+    return card;
+  }
 }
 
 /** Search both sources for a parsed card {name, number, total}. */
@@ -1478,13 +1573,17 @@ async function rankCandidates(cands, parsed, cardCanvas) {
   scored.sort((a, b) => b.score - a.score);
   if (mySig) {
     // Compare artwork only for the top candidates (keeps network use small)
-    const top = scored.slice(0, 16);
-    await Promise.all(top.map(async (x) => {
-      if (!x.card.img) return;
-      const img = await loadCorsImage(x.card.img);
-      if (!img) return;
-      try { x.img = sigSimilarity(mySig, artSignature(img)); x.score += 4 * Math.max(0, x.img); } catch (e) { /* CORS-tainted */ }
-    }));
+    // at most ~3 seconds, so a slow connection never holds up the list
+    const top = scored.slice(0, 10);
+    await Promise.race([
+      Promise.all(top.map(async (x) => {
+        if (!x.card.img) return;
+        const img = await loadCorsImage(x.card.img, 3000);
+        if (!img) return;
+        try { x.img = sigSimilarity(mySig, artSignature(img)); x.score += 4 * Math.max(0, x.img); } catch (e) { /* CORS-tainted */ }
+      })),
+      sleep(3000),
+    ]);
     scored.sort((a, b) => b.score - a.score);
   }
   return scored;
@@ -1896,7 +1995,19 @@ function valueBoxHTML(est) {
     ${est.graded ? `<div class="range" style="margin-top:6px">🛡️ מחיר קלף מדורג משתנה מאוד – כדאי לבדוק מכירות של "PSA ${est.graded}" ב-eBay (קישור למטה).</div>` : ''}`;
 }
 
-function showResult(card) {
+let resultSeq = 0;
+async function showResult(card) {
+  const seq = ++resultSeq;
+  if (!hasPrices(card) && card.src !== 'tcgdex') {
+    showStep('stepResult');
+    $('#stepResult').innerHTML = '<div class="panel row muted"><span class="spinner"></span> מחפש מחיר במקור נוסף...</div>';
+    card = await enrichPrices(card);
+    if (seq !== resultSeq) return;
+  }
+  renderResult(card);
+}
+
+function renderResult(card) {
   cap.selected = card;
   showStep('stepResult');
   const box = $('#stepResult');
@@ -2041,9 +2152,10 @@ async function renderCollection() {
   $('#collGrid').innerHTML = list.map(it => {
     const e = estimate(it.card, it.variant, it.condition);
     const img = it.photo || it.card.img || '';
-    return `<div class="tile" data-uid="${esc(it.uid)}">
+    const shiny = /holo/i.test(it.variant) || /holo|ultra|secret|illustration|hyper|rainbow|ex\b|vmax|vstar/i.test(it.card.rarity || '');
+    return `<div class="tile ${shiny ? 'shiny' : ''}" data-uid="${esc(it.uid)}">
       ${it.qty > 1 ? `<span class="qty">×${it.qty}</span>` : ''}
-      <div class="img" style="background-image:url('${esc(img)}')"></div>
+      <img class="img" src="${esc(img)}" alt="" loading="lazy" decoding="async">
       <div class="info">
         <div class="name" dir="ltr" style="text-align:right">${esc(it.card.name)}</div>
         <div class="set">${esc(it.card.setName)} #${esc(it.card.number)}</div>
@@ -2054,7 +2166,8 @@ async function renderCollection() {
   if (items.length && !list.length) $('#collGrid').innerHTML = '<p class="muted">לא נמצאו קלפים בחיפוש.</p>';
   $$('.tile', $('#collGrid')).forEach(el => el.addEventListener('click', () => openItem(el.dataset.uid)));
 }
-$('#collSearch').addEventListener('input', renderCollection);
+let collSearchTimer = null;
+$('#collSearch').addEventListener('input', () => { clearTimeout(collSearchTimer); collSearchTimer = setTimeout(renderCollection, 200); });
 $('#collSort').addEventListener('change', renderCollection);
 
 function openItem(uid) {
@@ -2766,7 +2879,7 @@ function renderChart() {
 async function autoRefreshPrices() {
   if (!navigator.onLine) return;
   const items = await db.all();
-  const stale = items.filter(it => Date.now() - (it.pricedAt || 0) > 3 * 864e5);
+  const stale = items.filter(it => !hasPrices(it.card) || Date.now() - (it.pricedAt || 0) > 3 * 864e5);
   const done = new Map();
   for (const it of stale.slice(0, 40)) {
     try {
@@ -3016,7 +3129,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-4';
+const APP_VERSION = '2026.10.21-5';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

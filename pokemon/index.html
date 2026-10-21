@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>הפוקדקס של ניתאי עשור</title>
+<title>הפוקדקס</title>
 <meta name="description" content="אפליקציית הפוקימון של ניתאי עשור – אוסף קלפים, זיהוי קלפים מתמונה והערכת שווי">
 <meta name="theme-color" content="#e3350d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="הפוקדקס של ניתאי">
+<meta name="apple-mobile-web-app-title" content="הפוקדקס">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -66,7 +66,8 @@ button, input, select { font-family: inherit; font-size: 1rem; }
   content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%;
   background: #fff; border: 3px solid #222; top: 50%; left: 50%; transform: translate(-50%, -50%);
 }
-.app-header h1 { font-size: 1.25rem; font-weight: 900; line-height: 1.15; }
+.app-header h1 { font-size: 1.15rem; font-weight: 900; line-height: 1.15; }
+.app-header > div:nth-child(2) { min-width: 0; }
 .app-header .sub { font-size: 0.8rem; opacity: 0.85; }
 .install-btn {
   margin-right: auto; border: none; background: var(--yellow); color: var(--navy); font-weight: 900;
@@ -115,7 +116,7 @@ main { max-width: 900px; margin: 0 auto; padding: 14px 14px 0; }
 .btn-block { width: 100%; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .row > .grow { flex: 1; min-width: 0; }
-input[type=text], input[type=password], input[type=search], select {
+input[type=text], input[type=password], input[type=search], input[type=tel], select {
   width: 100%; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 12px;
   background: #fff; color: var(--text); outline: none;
 }
@@ -293,6 +294,85 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
 .pick-grid .tile .name { font-size: 0.8rem; }
 .pick-grid .tile.used { opacity: 0.35; pointer-events: none; }
 
+/* ---------- Sub tabs ---------- */
+.subtabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+.subtabs::-webkit-scrollbar { display: none; }
+.subtabs button {
+  flex: 1; white-space: nowrap; border: none; background: #fff; color: var(--navy); padding: 9px 10px;
+  border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: var(--shadow);
+}
+.subtabs button.on { background: var(--navy); color: #fff; }
+
+/* ---------- Sets ---------- */
+.set-row { display: flex; gap: 12px; align-items: center; padding: 12px; background: #fff; border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 10px; cursor: pointer; }
+.set-row .s-info { flex: 1; min-width: 0; }
+.set-row .s-name { font-weight: 700; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-row .s-sub { font-size: 0.75rem; color: var(--muted); }
+.set-row .s-pct { font-weight: 900; font-size: 1.1rem; color: var(--navy); min-width: 48px; text-align: center; }
+.progress { height: 10px; background: #e6e9f0; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.progress > div { height: 100%; background: var(--blue); border-radius: 6px; }
+.progress.done > div { background: var(--green); }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; margin-top: 12px; }
+.set-card { position: relative; cursor: pointer; }
+.set-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: 6px; background: #e3e8f2; display: block; }
+.set-card.missing img { filter: grayscale(1); opacity: 0.35; }
+.set-card .n { position: absolute; bottom: 3px; left: 3px; background: rgba(0,0,0,.65); color: #fff; font-size: 0.65rem; padding: 1px 5px; border-radius: 6px; direction: ltr; }
+.set-card .ok { position: absolute; top: 3px; right: 3px; background: var(--green); color: #fff; font-size: 0.7rem; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.filter-row { display: flex; gap: 6px; margin-top: 10px; }
+.filter-row button { flex: 1; border: none; background: #e3e8f2; padding: 7px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; }
+.filter-row button.on { background: var(--navy); color: #fff; }
+
+/* ---------- Value chart ---------- */
+.hero-val { font-size: 2.2rem; font-weight: 900; color: var(--navy); line-height: 1.1; }
+.delta { font-size: 0.88rem; font-weight: 700; margin-top: 4px; }
+.delta.up { color: #15803d; }
+.delta.down { color: #b91c1c; }
+.chart-wrap { position: relative; margin-top: 12px; direction: ltr; }
+.chart-wrap svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart-tip {
+  position: absolute; top: 0; transform: translateX(-50%); background: var(--navy); color: #fff; font-size: 0.78rem;
+  padding: 5px 9px; border-radius: 8px; pointer-events: none; white-space: nowrap; direction: rtl; text-align: center;
+}
+.mover { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.mover:last-child { border-bottom: none; }
+.mover img { width: 40px; aspect-ratio: 63/88; object-fit: cover; border-radius: 5px; background: #eef1f7; }
+.mover .m-name { flex: 1; min-width: 0; font-weight: 700; font-size: 0.88rem; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mover .m-ch { font-weight: 900; font-size: 0.88rem; white-space: nowrap; text-align: left; }
+.mover .m-ch small { display: block; font-weight: 500; color: var(--muted); font-size: 0.72rem; }
+
+/* ---------- Achievements ---------- */
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.badge-card { background: #fff; border-radius: 14px; padding: 12px 10px; text-align: center; box-shadow: var(--shadow); }
+.badge-card .b-ico { font-size: 2.1rem; }
+.badge-card .b-title { font-weight: 900; font-size: 0.9rem; margin-top: 4px; }
+.badge-card .b-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.badge-card.locked .b-ico { filter: grayscale(1); opacity: 0.35; }
+.badge-card.locked .b-title { color: var(--muted); }
+.badge-card.unlocked { border: 2px solid var(--yellow); background: #fffbea; }
+.badge-card .progress { height: 6px; }
+.celebrate {
+  position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center;
+  background: rgba(15,20,40,.55); animation: pop .2s ease-out;
+}
+.celebrate .box { background: #fff; border-radius: 22px; padding: 26px 22px; text-align: center; max-width: 320px; width: 86vw; border: 4px solid var(--yellow); }
+.celebrate .big { font-size: 4rem; animation: bounce 0.8s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px) scale(1.08); } }
+
+/* ---------- Header buttons / welcome ---------- */
+.hdr-btns { margin-right: auto; display: flex; gap: 6px; }
+.hdr-btns .install-btn { margin-right: 0; }
+.invite-btn { border: none; background: rgba(255,255,255,.2); color: #fff; border-radius: 12px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+.welcome { position: fixed; inset: 0; z-index: 400; background: linear-gradient(160deg, var(--red), var(--red-dark)); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.welcome .box { background: #fff; border-radius: 24px; padding: 26px 20px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+.welcome .pokeball { margin: 0 auto 10px; width: 64px; height: 64px; }
+.welcome h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 4px; }
+.welcome form { text-align: right; margin-top: 16px; }
+.welcome .err { color: var(--red); font-size: 0.82rem; min-height: 1.2em; margin-top: 4px; }
+.wa-btn { background: #25d366; color: #fff; }
+.invite-btn, .install-btn { padding: 8px 10px; font-size: 1rem; }
+.wide-only { display: none; font-size: 0.85rem; }
+@media (min-width: 480px) { .wide-only { display: inline; } }
+
 @media (min-width: 700px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
   .modal-bg { align-items: center; }
@@ -305,10 +385,13 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
 <header class="app-header">
   <div class="pokeball" aria-hidden="true"></div>
   <div>
-    <h1>הפוקדקס של ניתאי עשור</h1>
+    <h1 id="appTitle">הפוקדקס</h1>
     <div class="sub">אוסף קלפי הפוקימון שלי ⚡</div>
   </div>
-  <button class="install-btn" id="btnInstall" hidden>📲 התקן</button>
+  <div class="hdr-btns">
+    <button class="invite-btn" data-invite aria-label="הזמן חבר בוואטסאפ" title="הזמן חבר">📣<span class="wide-only"> הזמן חבר</span></button>
+    <button class="install-btn" id="btnInstall" hidden>📲<span class="wide-only"> התקן</span></button>
+  </div>
 </header>
 
 <main>
@@ -319,6 +402,13 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
       <div class="stat"><div class="num" id="statUnique">0</div><div class="lbl">קלפים שונים</div></div>
       <div class="stat value"><div class="num" id="statValue">₪0</div><div class="lbl">שווי האוסף</div></div>
     </div>
+    <div class="subtabs" id="collTabs">
+      <button data-ctab="cards" class="on">🃏 קלפים</button>
+      <button data-ctab="sets">🧩 סטים</button>
+      <button data-ctab="chart">📈 שווי</button>
+      <button data-ctab="badges">🏆 הישגים</button>
+    </div>
+    <div id="ctab-cards">
     <div class="coll-tools">
       <input type="search" id="collSearch" placeholder="🔍 חיפוש באוסף...">
       <select id="collSort" aria-label="מיון">
@@ -338,6 +428,10 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
     <div class="row" style="margin-top:14px" id="collFooter" hidden>
       <button class="btn btn-ghost grow" id="btnRefreshAll">🔄 עדכן מחירים לכל האוסף</button>
     </div>
+    </div>
+    <div id="ctab-sets" hidden></div>
+    <div id="ctab-chart" hidden></div>
+    <div id="ctab-badges" hidden></div>
   </section>
 
   <!-- ===== Capture (add / value scan) ===== -->
@@ -443,6 +537,20 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
   <!-- ===== Settings ===== -->
   <section id="view-settings" hidden>
     <div class="panel">
+      <h2>👤 הפרופיל שלי</h2>
+      <label class="field" for="profName">שם</label>
+      <input type="text" id="profName" autocomplete="name">
+      <label class="field" for="profPhone" style="margin-top:10px">טלפון</label>
+      <input type="tel" id="profPhone" dir="ltr" inputmode="tel" autocomplete="tel">
+      <div class="err" id="profErr" style="color:var(--red);font-size:.82rem;min-height:1.2em"></div>
+      <button class="btn btn-blue" id="btnSaveProfile">שמור</button>
+    </div>
+    <div class="panel">
+      <h2>📣 הזמנת חברים</h2>
+      <p class="muted" style="margin-bottom:10px">שלח לחבר הזמנה בוואטסאפ עם קישור להורדת האפליקציה.</p>
+      <button class="btn wa-btn btn-block" data-invite>💬 הזמן חבר בוואטסאפ</button>
+    </div>
+    <div class="panel">
       <h2>💱 שערי מטבע</h2>
       <p class="muted" id="ratesInfo"></p>
       <button class="btn btn-ghost" id="btnRates" style="margin-top:10px">🔄 עדכן שערים</button>
@@ -464,9 +572,29 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
       <h2>💾 גיבוי</h2>
       <p class="muted" style="margin-bottom:10px">האוסף נשמר בדפדפן של הטלפון. כדאי לגבות מדי פעם לקובץ.</p>
       <div class="row">
-        <button class="btn btn-ghost" id="btnExport">⬇️ ייצוא גיבוי</button>
+        <button class="btn btn-ghost" id="btnExport">⬇️ שמור / שתף גיבוי</button>
         <label class="btn btn-ghost">⬆️ ייבוא גיבוי<input type="file" accept="application/json,.json" id="fileImport" hidden></label>
       </div>
+    </div>
+    <div class="panel">
+      <h2>☁️ גיבוי אוטומטי בענן</h2>
+      <p class="muted" style="margin-bottom:10px">
+        כשזה מופעל, כל שינוי באוסף (כולל התמונות) נשמר אוטומטית בגיבוי סודי בחשבון GitHub שלך.
+        אם מחליפים או מאבדים טלפון – מכניסים את אותו מפתח ולוחצים "שחזר מהענן".
+      </p>
+      <ol class="muted" style="padding-right:18px;line-height:1.7;margin-bottom:10px;font-size:.82rem">
+        <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Pokedex%20backup" target="_blank" rel="noopener">לחץ כאן ליצירת מפתח ב-GitHub</a> (רק הרשאת gist מסומנת)</li>
+        <li>בחר תוקף ("Expiration") – למשל No expiration – ולחץ Generate token</li>
+        <li>העתק את המפתח והדבק כאן</li>
+      </ol>
+      <label class="field" for="setGhToken">מפתח GitHub</label>
+      <input type="password" id="setGhToken" dir="ltr" placeholder="ghp_...">
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-blue" id="btnCloudSave">שמור והפעל</button>
+        <button class="btn btn-ghost" id="btnCloudNow">☁️ גבה עכשיו</button>
+        <button class="btn btn-ghost" id="btnCloudRestore">⤵️ שחזר מהענן</button>
+      </div>
+      <p class="muted" id="cloudStatus" style="margin-top:10px"></p>
     </div>
     <div class="panel">
       <h2>📚 מקורות המידע</h2>
@@ -625,6 +753,7 @@ function renderRatesInfo() {
 /* =====================================================================
    Storage (IndexedDB)
    ===================================================================== */
+let onDbChange = () => {};
 const db = (() => {
   let dbp = null;
   function open() {
@@ -654,9 +783,9 @@ const db = (() => {
   }
   return {
     all: () => tx('readonly', s => s.getAll()),
-    put: (item) => tx('readwrite', s => s.put(item)),
-    del: (uid) => tx('readwrite', s => s.delete(uid)),
-    clear: () => tx('readwrite', s => s.clear()),
+    put: (item) => tx('readwrite', s => s.put(item)).then(r => { onDbChange(); return r; }),
+    del: (uid) => tx('readwrite', s => s.delete(uid)).then(r => { onDbChange(); return r; }),
+    clear: () => tx('readwrite', s => s.clear()).then(r => { onDbChange(); return r; }),
   };
 })();
 
@@ -679,6 +808,13 @@ const CONDITIONS = [
   { id: 'MP', label: 'משומש (MP)', f: 0.7 },
   { id: 'HP', label: 'שחוק (HP)', f: 0.5 },
   { id: 'DMG', label: 'פגום (DMG)', f: 0.3 },
+  // Graded slabs (PSA / CGC / BGS). The price sources only list raw cards, so this is a rough
+  // multiplier on the Near-Mint price, with a minimum that reflects the cost of grading.
+  { id: 'G10', label: 'מדורג 10', graded: 10, mult: 4, floorUSD: 30 },
+  { id: 'G9', label: 'מדורג 9', graded: 9, mult: 1.7, floorUSD: 18 },
+  { id: 'G8', label: 'מדורג 8', graded: 8, mult: 1.15, floorUSD: 12 },
+  { id: 'G7', label: 'מדורג 7', graded: 7, mult: 0.9, floorUSD: 9 },
+  { id: 'G6', label: 'מדורג 6 ומטה', graded: 6, mult: 0.7, floorUSD: 7 },
 ];
 
 const PTCG = 'https://api.pokemontcg.io/v2/cards';
@@ -711,6 +847,7 @@ function normalizePtcg(c) {
     rarity: c.rarity || '',
     setName: (c.set && c.set.name) || '',
     setSeries: (c.set && c.set.series) || '',
+    setId: (c.set && c.set.id) || '',
     setTotal: (c.set && (c.set.printedTotal || c.set.total)) || null,
     releaseDate: (c.set && c.set.releaseDate) || '',
     img: c.images && c.images.small,
@@ -764,6 +901,7 @@ function normalizeTcgdex(c) {
     rarity: c.rarity || '',
     setName: (c.set && c.set.name) || '',
     setSeries: '',
+    setId: (c.set && c.set.id) || '',
     setTotal: (c.set && c.set.cardCount && (c.set.cardCount.official || c.set.cardCount.total)) || null,
     releaseDate: c.set && c.set.releaseDate || '',
     img,
@@ -863,7 +1001,14 @@ function availableVariants(card) {
 }
 
 function estimate(card, variant, condition) {
-  const f = (CONDITIONS.find(c => c.id === condition) || CONDITIONS[0]).f;
+  const cond = CONDITIONS.find(c => c.id === condition) || CONDITIONS[0];
+  if (cond.graded) {
+    const raw = estimate(card, variant, 'NM');
+    if (raw.ils == null) return { ...raw, graded: cond.graded };
+    const ils = Math.max(raw.ils * cond.mult, cond.floorUSD * rates.USD);
+    return { ils, low: ils * 0.7, high: ils * 1.5, basis: [...raw.basis, 'הערכה גסה לקלף מדורג'], graded: cond.graded };
+  }
+  const f = cond.f;
   const p = card.prices || {};
   const tv = p.tcg && p.tcg[variant];
   const isReverse = /reverse/i.test(variant || '');
@@ -1529,6 +1674,7 @@ $('#btnRetake').addEventListener('click', () => startCaptureFlow());
 $('#btnAdjustOk').addEventListener('click', () => {
   // keep the user's orientation (top edge = q[0]->q[1]) but make sure the points are not crossed
   cap.cardCanvas = warpCard(cap.srcCanvas, cap.quad);
+  bumpStat('scans');
   showStep('stepIdentify');
   setupIdentifyHeader();
   identify();
@@ -1672,13 +1818,16 @@ function variantOptions(card, selected) {
   return availableVariants(card).map(v => `<option value="${esc(v)}" ${v === selected ? 'selected' : ''}>${esc(VARIANT_LABELS[v] || v)}</option>`).join('');
 }
 function conditionOptions(selected) {
-  return CONDITIONS.map(c => `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.label}</option>`).join('');
+  const opt = (c) => `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.label}</option>`;
+  return `<optgroup label="קלף רגיל">${CONDITIONS.filter(c => !c.graded).map(opt).join('')}</optgroup>
+    <optgroup label="קלף מדורג (PSA / CGC / BGS)">${CONDITIONS.filter(c => c.graded).map(opt).join('')}</optgroup>`;
 }
 
 function valueBoxHTML(est) {
   return `<div class="lbl">שווי משוער</div>
     <div class="big">${est.ils != null ? fmtILS(est.ils) : 'אין מחיר'}</div>
-    ${est.ils != null ? `<div class="range">טווח: ${fmtILS(est.low)} – ${fmtILS(est.high)} · לפי ${esc(est.basis.join(' + '))}</div>` : '<div class="range">אין נתוני מכירות לקלף הזה</div>'}`;
+    ${est.ils != null ? `<div class="range">טווח: ${fmtILS(est.low)} – ${fmtILS(est.high)} · לפי ${esc(est.basis.join(' + '))}</div>` : '<div class="range">אין נתוני מכירות לקלף הזה</div>'}
+    ${est.graded ? `<div class="range" style="margin-top:6px">🛡️ מחיר קלף מדורג משתנה מאוד – כדאי לבדוק מכירות של "PSA ${est.graded}" ב-eBay (קישור למטה).</div>` : ''}`;
 }
 
 function showResult(card) {
@@ -1784,6 +1933,7 @@ async function addToCollection(card, variant, condition, qty, canvas) {
     photo: photoDataUrl(canvas),
     addedAt: Date.now(),
     pricedAt: Date.now(),
+    firstValue: estimate(card, variant, condition).ils,
   };
   await db.put(item);
   return item;
@@ -1805,6 +1955,12 @@ async function renderCollection() {
   $('#statValue').textContent = fmtILS(value);
   $('#collEmpty').hidden = items.length > 0;
   $('#collFooter').hidden = items.length === 0;
+  recordHistory(value, total);
+  for (const it of items) {
+    if (it.firstValue === undefined) { it.firstValue = estimate(it.card, it.variant, it.condition).ils; db.put(it); }
+  }
+  checkBadges(items);
+  if (collTab !== 'cards') { renderCollTab(); return; }
 
   const q = $('#collSearch').value.trim().toLowerCase();
   let list = items.filter(it => !q || [it.card.name, it.card.setName, it.card.number].join(' ').toLowerCase().includes(q));
@@ -2082,6 +2238,7 @@ $('#btnTradeDo').addEventListener('click', async () => {
   const added = trade.get.length;
   trade.give = []; trade.get = [];
   saveTrade();
+  bumpStat('trades');
   toast(`🤝 הטרייד נשמר! יצאו ${removed} קלפים, נכנסו ${added}.`);
   go('collection');
 });
@@ -2097,6 +2254,9 @@ $('#btnTradeClear').addEventListener('click', () => {
    ===================================================================== */
 function renderSettings() {
   renderRatesInfo();
+  renderProfileSettings();
+  $('#setGhToken').value = settings.get('ghToken');
+  cloudStatus();
   $('#setAnthropic').value = settings.get('anthropicKey');
   $('#setPtcg').value = settings.get('ptcgKey');
 }
@@ -2109,9 +2269,19 @@ $('#btnRates').addEventListener('click', async () => { await refreshRates(true);
 $('#btnExport').addEventListener('click', async () => {
   const items = await db.all();
   const blob = new Blob([JSON.stringify({ app: 'nitai-pokedex', version: 1, exportedAt: new Date().toISOString(), items })], { type: 'application/json' });
+  const fileName = `pokedex-${new Date().toISOString().slice(0, 10)}.json`;
+  try {
+    const file = new File([blob], fileName, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'גיבוי הפוקדקס' });
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `pokedex-nitai-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = fileName;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
@@ -2140,12 +2310,615 @@ $('#btnClearAll').addEventListener('click', async () => {
 });
 
 /* =====================================================================
+   Small persisted stats (scans, trades, invites)
+   ===================================================================== */
+const lsGet = (k, def) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? def : v; } catch (e) { return def; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+function bumpStat(k) {
+  const st = lsGet('nitai-stats', {});
+  st[k] = (st[k] || 0) + 1;
+  lsSet('nitai-stats', st);
+  onDbChange();
+}
+
+/* =====================================================================
+   Profile (sign-up) & WhatsApp invite
+   ===================================================================== */
+const getProfile = () => lsGet('nitai-profile', null);
+
+function normalizePhone(raw) {
+  const p = String(raw || '').replace(/[\s\-().]/g, '');
+  if (/^05\d{8}$/.test(p)) return p;                 // Israeli mobile: 05X-XXXXXXX
+  if (/^\+9725\d{8}$/.test(p)) return '0' + p.slice(4);
+  if (/^\+\d{8,15}$/.test(p)) return p;              // international
+  return null;
+}
+function validateProfile(name, phone) {
+  if (String(name || '').trim().length < 2) return 'נא לכתוב שם (לפחות 2 אותיות)';
+  if (!normalizePhone(phone)) return 'מספר הטלפון לא תקין (לדוגמה 050-1234567)';
+  return '';
+}
+function saveProfile(name, phone) {
+  const prev = getProfile() || {};
+  lsSet('nitai-profile', { ...prev, name: name.trim(), phone: normalizePhone(phone), registeredAt: prev.registeredAt || Date.now() });
+  applyProfile();
+  onDbChange();
+}
+function applyProfile() {
+  const pr = getProfile();
+  const title = pr ? `הפוקדקס של ${pr.name}` : 'הפוקדקס';
+  $('#appTitle').textContent = title;
+  document.title = title;
+}
+
+function showWelcome() {
+  const w = document.createElement('div');
+  w.className = 'welcome';
+  w.innerHTML = `<div class="box">
+    <div class="pokeball" aria-hidden="true"></div>
+    <h2>ברוכים הבאים לפוקדקס! ⚡</h2>
+    <p class="muted">האפליקציה לאוסף קלפי פוקימון: מצלמים קלף, רואים כמה הוא שווה ובודקים טריידים.</p>
+    <form id="welcomeForm" novalidate>
+      <label class="field" for="wName">איך קוראים לך?</label>
+      <input type="text" id="wName" autocomplete="name" placeholder="השם שלך" required>
+      <label class="field" for="wPhone" style="margin-top:12px">מספר טלפון</label>
+      <input type="tel" id="wPhone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="050-1234567" required>
+      <div class="err" id="wErr"></div>
+      <button class="btn btn-red btn-block" type="submit" style="margin-top:8px">🚀 בואו נתחיל!</button>
+      <p class="muted" style="font-size:.75rem;margin-top:10px;text-align:center">הפרטים נשמרים רק בטלפון שלך.</p>
+    </form>
+  </div>`;
+  document.body.appendChild(w);
+  $('#wName', w).focus();
+  $('#welcomeForm', w).addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#wName', w).value, phone = $('#wPhone', w).value;
+    const err = validateProfile(name, phone);
+    $('#wErr', w).textContent = err;
+    if (err) return;
+    saveProfile(name, phone);
+    w.remove();
+    toast(`שלום ${name.trim()}! 👋 בוא נתחיל לאסוף`);
+  });
+}
+
+const APP_URL = location.origin + location.pathname;
+function inviteFriend() {
+  const pr = getProfile();
+  const who = pr ? pr.name : 'חבר';
+  const msg = `היי! 👋 ${who} מזמין אותך להצטרף לפוקדקס – אפליקציה לאוסף קלפי פוקימון 🎴
+
+📸 מצלמים קלף והיא מזהה אותו
+💰 רואים כמה כל קלף שווה בשקלים
+🤝 בודקים אם טרייד משתלם
+
+👇 להורדה:
+${APP_URL}
+
+📲 אחרי שנפתח: לחץ על "התקן" (באייפון: שיתוף ⬆️ ← "הוסף למסך הבית")`;
+  bumpStat('invites');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+document.addEventListener('click', (e) => { if (e.target.closest('[data-invite]')) inviteFriend(); });
+
+function renderProfileSettings() {
+  const pr = getProfile() || {};
+  $('#profName').value = pr.name || '';
+  $('#profPhone').value = pr.phone || '';
+  $('#profErr').textContent = '';
+}
+$('#btnSaveProfile').addEventListener('click', () => {
+  const err = validateProfile($('#profName').value, $('#profPhone').value);
+  $('#profErr').textContent = err;
+  if (err) return;
+  saveProfile($('#profName').value, $('#profPhone').value);
+  toast('הפרופיל נשמר');
+});
+
+/* =====================================================================
+   Collection sub-tabs
+   ===================================================================== */
+let collTab = 'cards';
+$('#collTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ctab]');
+  if (!b) return;
+  collTab = b.dataset.ctab;
+  $$('#collTabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['cards', 'sets', 'chart', 'badges'].forEach(t => { $('#ctab-' + t).hidden = t !== collTab; });
+  renderCollection();
+});
+function renderCollTab() {
+  if (collTab === 'sets') renderSets();
+  if (collTab === 'chart') renderChart();
+  if (collTab === 'badges') renderBadges();
+}
+
+/* =====================================================================
+   Sets: completion progress
+   ===================================================================== */
+const cardSetId = (card) => card.setId || String(card.id || '').replace(/-[^-]+$/, '');
+const numKey = (n) => stripZeros(String(n || '')).toUpperCase();
+
+function computeSets(items) {
+  const sets = new Map();
+  for (const it of items) {
+    const c = it.card, id = cardSetId(c);
+    if (!id) continue;
+    if (!sets.has(id)) sets.set(id, { id, name: c.setName || id, total: c.setTotal || 0, src: c.src, releaseDate: c.releaseDate || '', main: new Set(), extra: new Set(), value: 0 });
+    const s = sets.get(id);
+    const n = parseInt(c.number, 10);
+    if (/^\d+$/.test(stripZeros(c.number)) && s.total && n <= s.total) s.main.add(n); else s.extra.add(numKey(c.number));
+    s.value += itemValue(it);
+  }
+  return Array.from(sets.values()).map(s => ({ ...s, pct: s.total ? s.main.size / s.total : 0 }));
+}
+
+function renderSets() {
+  const sets = computeSets(collectionCache).sort((a, b) => b.pct - a.pct || b.main.size - a.main.size);
+  const box = $('#ctab-sets');
+  if (!sets.length) { box.innerHTML = '<div class="panel empty"><div class="big">🧩</div><p class="muted">כשתוסיף קלפים, כאן תראה כמה מכל סט כבר יש לך.</p></div>'; return; }
+  box.innerHTML = `<p class="muted" style="margin-bottom:10px">לחץ על סט כדי לראות אילו קלפים חסרים לך.</p>` + sets.map(s => {
+    const pct = Math.round(s.pct * 100);
+    return `<div class="set-row" data-set="${esc(s.id)}">
+      <div class="s-info">
+        <div class="s-name">${esc(s.name)}</div>
+        <div class="s-sub">${s.main.size} מתוך ${s.total || '?'} קלפים${s.extra.size ? ` · +${s.extra.size} מיוחדים` : ''} · ${fmtILS(s.value)}</div>
+        <div class="progress ${pct >= 100 ? 'done' : ''}"><div style="width:${Math.min(100, pct)}%"></div></div>
+      </div>
+      <div class="s-pct">${pct >= 100 ? '🏆' : pct + '%'}</div>
+    </div>`;
+  }).join('');
+  $$('.set-row', box).forEach(r => r.addEventListener('click', () => openSet(sets.find(s => s.id === r.dataset.set))));
+}
+
+const setCardsCache = {};
+async function fetchSetCards(set) {
+  if (setCardsCache[set.id]) return setCardsCache[set.id];
+  let cards = [];
+  if (set.src !== 'tcgdex') {
+    try {
+      for (let page = 1; page <= 3; page++) {
+        const url = `${PTCG}?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=250&page=${page}&select=${PTCG_SELECT}`;
+        const d = await fetchJSON(url, { headers: ptcgHeaders() }, 30000);
+        cards.push(...(d.data || []).map(normalizePtcg));
+        if (!d.data || d.data.length < 250) break;
+      }
+    } catch (e) { cards = []; }
+  }
+  if (!cards.length) {
+    const d = await fetchJSON(`${TCGDEX}/sets/${encodeURIComponent(set.id)}`, {}, 25000);
+    cards = (d.cards || []).map(c => ({ src: 'tcgdex', brief: true, id: c.id, name: c.name, number: c.localId, img: c.image ? c.image + '/low.png' : '', setName: d.name, setId: set.id }));
+  }
+  const nk = (c) => { const n = parseInt(c.number, 10); return isNaN(n) ? 1e6 : n; };
+  cards.sort((a, b) => nk(a) - nk(b) || String(a.number).localeCompare(String(b.number)));
+  setCardsCache[set.id] = cards;
+  return cards;
+}
+
+async function openSet(set) {
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><button class="close" aria-label="סגור">✕</button>
+    <div class="card-title">${esc(set.name)}</div>
+    <div class="row muted" style="margin-top:14px"><span class="spinner"></span> טוען את כל הקלפים בסט...</div></div>`;
+  const close = () => bg.remove();
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('.close')) close(); });
+  document.body.appendChild(bg);
+  let cards;
+  try { cards = await fetchSetCards(set); }
+  catch (e) { $('.modal', bg).insertAdjacentHTML('beforeend', '<p class="muted">⚠️ אין חיבור למאגר כרגע.</p>'); $('.row', bg).remove(); return; }
+  const owned = collectionCache.filter(it => cardSetId(it.card) === set.id);
+  const ownedItem = (c) => owned.find(it => it.card.id === c.id || numKey(it.card.number) === numKey(c.number));
+  let filter = 'all';
+  const render = () => {
+    const list = cards.filter(c => filter === 'all' || (filter === 'missing') === !ownedItem(c));
+    const missing = cards.filter(c => !ownedItem(c));
+    const missingValue = missing.reduce((s, c) => s + (estimate(c, bestVariant(c), 'NM').ils || 0), 0);
+    $('.modal', bg).innerHTML = `<button class="close" aria-label="סגור">✕</button>
+      <div class="card-title">${esc(set.name)}</div>
+      <div class="card-meta">${set.main.size} מתוך ${set.total || cards.length} · חסרים ${missing.length}${missingValue ? ` · עלות משוערת להשלמה: ${fmtILS(missingValue)}` : ''}</div>
+      <div class="progress ${set.pct >= 1 ? 'done' : ''}"><div style="width:${Math.min(100, Math.round(set.pct * 100))}%"></div></div>
+      <div class="filter-row">
+        <button data-f="all" class="${filter === 'all' ? 'on' : ''}">הכל (${cards.length})</button>
+        <button data-f="missing" class="${filter === 'missing' ? 'on' : ''}">חסרים (${missing.length})</button>
+        <button data-f="have" class="${filter === 'have' ? 'on' : ''}">יש לי (${cards.length - missing.length})</button>
+      </div>
+      <div class="set-grid">${list.map(c => `<div class="set-card ${ownedItem(c) ? '' : 'missing'}" data-id="${esc(c.id)}">
+        <img src="${esc(c.img || '')}" alt="${esc(c.name)}" loading="lazy">${ownedItem(c) ? '<span class="ok">✔</span>' : ''}<span class="n">${esc(c.number)}</span></div>`).join('')}</div>
+      <p class="muted" style="margin-top:10px;font-size:.78rem">לחץ על קלף חסר כדי לראות כמה הוא עולה.</p>`;
+    $$('[data-f]', bg).forEach(b => b.addEventListener('click', () => { filter = b.dataset.f; render(); }));
+    $$('.set-card', bg).forEach(el => el.addEventListener('click', async () => {
+      const c = cards.find(x => x.id === el.dataset.id);
+      const it = ownedItem(c);
+      close();
+      if (it) { openItem(it.uid); return; }
+      let full = c;
+      if (c.brief) { try { full = await tcgdexGet(c.id); } catch (e) { toast('אין חיבור למאגר כרגע'); return; } }
+      captureMode = 'value';
+      showView('capture');
+      $('#capTitle').textContent = '🧩 קלף חסר בסט';
+      $('#capSub').textContent = 'ככה הוא נראה וזה בערך המחיר שלו.';
+      cap.cardCanvas = null; cap.aiFinish = null;
+      showResult(full);
+    }));
+  };
+  render();
+}
+
+/* =====================================================================
+   Value history chart & price movers
+   ===================================================================== */
+const localDay = (t = Date.now()) => new Date(t).toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+function recordHistory(value, count) {
+  const h = lsGet('nitai-history', []);
+  if (!count && !h.length) return;
+  const d = localDay();
+  const last = h[h.length - 1];
+  const v = Math.round(value * 100) / 100;
+  if (last && last.d === d) { if (last.v === v && last.n === count) return; last.v = v; last.n = count; }
+  else h.push({ d, v, n: count });
+  lsSet('nitai-history', h.slice(-730));
+}
+
+function renderChart() {
+  const box = $('#ctab-chart');
+  const h = lsGet('nitai-history', []);
+  const items = collectionCache;
+  const now = items.reduce((s, it) => s + itemValue(it), 0);
+  const deltaHTML = (from, label) => {
+    if (from == null) return '';
+    const d = now - from, pct = from > 0 ? Math.round(d / from * 100) : 0;
+    if (Math.abs(d) < 0.01) return `<div class="delta">= ללא שינוי ${label}</div>`;
+    return `<div class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲ עלה' : '▼ ירד'} ${fmtILS(Math.abs(d))} (${pct > 0 ? '+' : ''}${pct}%) ${label}</div>`;
+  };
+  const monthAgo = localDay(Date.now() - 30 * 864e5);
+  const ref30 = [...h].reverse().find(x => x.d <= monthAgo);
+
+  let chart = '<p class="muted" style="margin-top:12px">📅 הגרף יתמלא עם הזמן – כל יום שבו פותחים את האפליקציה נשמרת נקודה.</p>';
+  if (h.length >= 2) {
+    const W = 600, H = 300, L = 92, R = 16, T = 20, B = 44;
+    const t0 = new Date(h[0].d).getTime(), t1 = new Date(h[h.length - 1].d).getTime();
+    const span = Math.max(1, t1 - t0);
+    const maxV = Math.max(...h.map(x => x.v), 1);
+    const nice = (m) => { const p = Math.pow(10, Math.floor(Math.log10(m))); return Math.ceil(m / p) * p; };
+    const top = nice(maxV * 1.1);
+    const X = (d) => L + (new Date(d).getTime() - t0) / span * (W - L - R);
+    const Y = (v) => T + (1 - v / top) * (H - T - B);
+    const pts = h.map(x => [X(x.d), Y(x.v)]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${Y(0)} L${pts[0][0].toFixed(1)} ${Y(0)} Z`;
+    const grid = [0, 0.25, 0.5, 0.75, 1].map(f => {
+      const v = top * f, y = Y(v);
+      return `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#e1e6f0" stroke-width="1"/>
+        <text x="${L - 8}" y="${y + 7}" text-anchor="end" font-size="20" fill="#6b7489">${v === 0 ? '₪0' : fmtILS(v)}</text>`;
+    }).join('');
+    const fmtD = (d) => new Date(d).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
+    const last = pts[pts.length - 1];
+    chart = `<div class="chart-wrap" id="chartWrap">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="שווי האוסף לאורך זמן">
+        ${grid}
+        <path d="${area}" fill="#2a75bb" fill-opacity="0.1"/>
+        <path d="${line}" fill="none" stroke="#2a75bb" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${last[0]}" cy="${last[1]}" r="4.5" fill="#2a75bb" stroke="#fff" stroke-width="2"/>
+        <text x="${L}" y="${H - 10}" font-size="20" fill="#6b7489">${fmtD(h[0].d)}</text>
+        <text x="${W - R}" y="${H - 10}" font-size="20" fill="#6b7489" text-anchor="end">${fmtD(h[h.length - 1].d)}</text>
+        <line id="chX" y1="${T}" y2="${H - B}" stroke="#1d2c5e" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>
+        <circle id="chDot" r="5" fill="#2a75bb" stroke="#fff" stroke-width="2" visibility="hidden"/>
+        <rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="chHit"/>
+      </svg>
+      <div class="chart-tip" id="chTip" hidden></div>
+    </div>`;
+    setTimeout(() => {
+      const wrap = $('#chartWrap');
+      if (!wrap) return;
+      const svg = $('svg', wrap), tip = $('#chTip'), xl = $('#chX'), dot = $('#chDot');
+      const move = (e) => {
+        const r = svg.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width * W;
+        let bi = 0;
+        pts.forEach((p, i) => { if (Math.abs(p[0] - x) < Math.abs(pts[bi][0] - x)) bi = i; });
+        const [px, py] = pts[bi];
+        xl.setAttribute('x1', px); xl.setAttribute('x2', px); xl.setAttribute('visibility', 'visible');
+        dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.setAttribute('visibility', 'visible');
+        tip.hidden = false;
+        tip.innerHTML = `<b>${fmtILS(h[bi].v)}</b><br>${fmtD(h[bi].d)} · ${h[bi].n} קלפים`;
+        tip.style.left = Math.min(r.width - 60, Math.max(60, px / W * r.width)) + 'px';
+      };
+      const hit = $('#chHit');
+      hit.addEventListener('pointermove', move);
+      hit.addEventListener('pointerdown', move);
+      hit.addEventListener('pointerleave', () => { tip.hidden = true; xl.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
+    });
+  }
+
+  const movers = items.map(it => {
+    const cur = estimate(it.card, it.variant, it.condition).ils;
+    if (cur == null || it.firstValue == null) return null;
+    return { it, cur, d: cur - it.firstValue, pct: it.firstValue > 0 ? (cur - it.firstValue) / it.firstValue : 0 };
+  }).filter(m => m && Math.abs(m.d) >= 0.5);
+  const moverHTML = (m) => `<div class="mover" data-uid="${esc(m.it.uid)}">
+      <img src="${esc(m.it.photo || m.it.card.img || '')}" alt="">
+      <div class="m-name">${esc(m.it.card.name)}</div>
+      <div class="m-ch" style="color:${m.d > 0 ? '#15803d' : '#b91c1c'}">${m.d > 0 ? '▲' : '▼'} ${fmtILS(Math.abs(m.d))}<small>${m.d > 0 ? '+' : '−'}${Math.round(Math.abs(m.pct) * 100)}% · עכשיו ${fmtILS(m.cur)}</small></div>
+    </div>`;
+  const ups = movers.filter(m => m.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
+  const downs = movers.filter(m => m.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
+
+  box.innerHTML = `<div class="panel">
+      <div class="muted">שווי האוסף היום</div>
+      <div class="hero-val">${fmtILS(now)}</div>
+      ${h.length ? deltaHTML(h[0].v, 'מאז ההתחלה') : ''}
+      ${ref30 && ref30 !== h[0] ? deltaHTML(ref30.v, 'בחודש האחרון') : ''}
+      ${chart}
+    </div>
+    <div class="panel"><h2>📈 עלו הכי הרבה</h2>${ups.length ? ups.map(moverHTML).join('') : '<p class="muted">עוד אין קלפים שהמחיר שלהם עלה מאז שהוספת אותם.</p>'}</div>
+    <div class="panel"><h2>📉 ירדו הכי הרבה</h2>${downs.length ? downs.map(moverHTML).join('') : '<p class="muted">אף קלף לא ירד – יופי!</p>'}</div>
+    <p class="muted" style="font-size:.75rem">השינוי מחושב מאז שהקלף נוסף לאוסף. המחירים מתעדכנים אוטומטית כל כמה ימים.</p>`;
+  $$('.mover', box).forEach(el => el.addEventListener('click', () => openItem(el.dataset.uid)));
+}
+
+/* Refresh prices of cards not updated for a few days (quietly, in the background). */
+async function autoRefreshPrices() {
+  if (!navigator.onLine) return;
+  const items = await db.all();
+  const stale = items.filter(it => Date.now() - (it.pricedAt || 0) > 3 * 864e5);
+  const done = new Map();
+  for (const it of stale.slice(0, 40)) {
+    try {
+      if (!done.has(it.card.id)) { done.set(it.card.id, await refetchCard(it.card)); await sleep(400); }
+      it.card = done.get(it.card.id);
+      it.pricedAt = Date.now();
+      await db.put(it);
+    } catch (e) { break; }
+  }
+  if (done.size && currentView === 'collection') renderCollection();
+}
+
+/* =====================================================================
+   Achievements
+   ===================================================================== */
+const BADGES = [
+  { id: 'first', icon: '🥚', title: 'הקלף הראשון', desc: 'הוסף קלף לאוסף', get: s => [s.total, 1] },
+  { id: 'c10', icon: '🐣', title: 'אספן מתחיל', desc: '10 קלפים באוסף', get: s => [s.total, 10] },
+  { id: 'c50', icon: '🔥', title: 'אספן רציני', desc: '50 קלפים באוסף', get: s => [s.total, 50] },
+  { id: 'c100', icon: '💯', title: 'מאה קלפים!', desc: '100 קלפים באוסף', get: s => [s.total, 100] },
+  { id: 'c250', icon: '👑', title: 'אלוף האספנים', desc: '250 קלפים באוסף', get: s => [s.total, 250] },
+  { id: 'u25', icon: '🌈', title: 'מגוון', desc: '25 קלפים שונים', get: s => [s.unique, 25] },
+  { id: 'holo', icon: '✨', title: 'מבריק', desc: '5 קלפים מבריקים (הולו)', get: s => [s.holo, 5] },
+  { id: 'v50', icon: '💎', title: 'קלף יקר', desc: 'קלף ששווה מעל ₪50', get: s => [Math.floor(s.maxCard), 50] },
+  { id: 'v200', icon: '💰', title: 'אוצר', desc: 'קלף ששווה מעל ₪200', get: s => [Math.floor(s.maxCard), 200] },
+  { id: 'tv500', icon: '🏦', title: 'אוסף שווה', desc: 'אוסף ששווה מעל ₪500', get: s => [Math.floor(s.value), 500] },
+  { id: 'tv2000', icon: '🤑', title: 'אוסף עשיר', desc: 'אוסף ששווה מעל ₪2,000', get: s => [Math.floor(s.value), 2000] },
+  { id: 'vintage', icon: '🦖', title: 'קלף עתיק', desc: 'קלף מלפני שנת 2003', get: s => [s.vintage, 1] },
+  { id: 'sets5', icon: '🗺️', title: 'חוקר', desc: 'קלפים מ-5 סטים שונים', get: s => [s.sets, 5] },
+  { id: 'set50', icon: '🧩', title: 'חצי סט', desc: 'חצי מסט אחד', get: s => [Math.floor(s.bestSetPct * 100), 50] },
+  { id: 'setFull', icon: '🏆', title: 'סט מלא!', desc: 'השלמת סט שלם', get: s => [Math.floor(s.bestSetPct * 100), 100] },
+  { id: 'graded', icon: '🛡️', title: 'קלף מדורג', desc: 'קלף מדורג באוסף', get: s => [s.graded, 1] },
+  { id: 'scan10', icon: '📸', title: 'צלם מקצועי', desc: 'סרקת 10 קלפים', get: s => [s.scans, 10] },
+  { id: 'trade1', icon: '🤝', title: 'טרייד ראשון', desc: 'עשית טרייד', get: s => [s.trades, 1] },
+  { id: 'trade5', icon: '🛒', title: 'סוחר', desc: '5 טריידים', get: s => [s.trades, 5] },
+  { id: 'invite', icon: '📣', title: 'חבר מביא חבר', desc: 'הזמנת חבר לאפליקציה', get: s => [s.invites, 1] },
+];
+
+function badgeStats(items) {
+  const st = lsGet('nitai-stats', {});
+  const sets = computeSets(items);
+  return {
+    total: items.reduce((s, it) => s + it.qty, 0),
+    unique: new Set(items.map(it => it.card.id)).size,
+    value: items.reduce((s, it) => s + itemValue(it), 0),
+    maxCard: Math.max(0, ...items.map(it => estimate(it.card, it.variant, it.condition).ils || 0)),
+    holo: items.filter(it => /holo/i.test(it.variant) || /holo/i.test(it.card.rarity || '')).reduce((s, it) => s + it.qty, 0),
+    vintage: items.filter(it => { const y = parseInt(String(it.card.releaseDate || '').slice(0, 4), 10); return y && y < 2003; }).length,
+    sets: sets.length,
+    bestSetPct: Math.max(0, ...sets.map(x => x.pct)),
+    graded: items.filter(it => /^G\d/.test(it.condition)).length,
+    scans: st.scans || 0, trades: st.trades || 0, invites: st.invites || 0,
+  };
+}
+
+function checkBadges(items) {
+  const s = badgeStats(items);
+  const got = lsGet('nitai-badges', {});
+  const fresh = BADGES.filter(b => { const [c, t] = b.get(s); return c >= t && !got[b.id]; });
+  if (!fresh.length) return;
+  fresh.forEach(b => { got[b.id] = Date.now(); });
+  lsSet('nitai-badges', got);
+  const b = fresh[fresh.length - 1];
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.innerHTML = `<div class="box"><div class="big">${b.icon}</div>
+    <h2 style="margin-top:8px">הישג חדש!</h2>
+    <div style="font-size:1.2rem;font-weight:900;margin-top:4px">${esc(b.title)}</div>
+    <p class="muted" style="margin-top:4px">${esc(b.desc)}${fresh.length > 1 ? ` (ועוד ${fresh.length - 1} הישגים!)` : ''}</p>
+    <button class="btn btn-yellow btn-block" style="margin-top:16px">יש! 🎉</button></div>`;
+  el.addEventListener('click', () => el.remove());
+  document.body.appendChild(el);
+}
+
+function renderBadges() {
+  const s = badgeStats(collectionCache);
+  const got = lsGet('nitai-badges', {});
+  const n = BADGES.filter(b => got[b.id]).length;
+  $('#ctab-badges').innerHTML = `<div class="panel" style="text-align:center">
+      <div class="hero-val" dir="ltr">${n} / ${BADGES.length}</div><div class="muted">הישגים שפתחת</div>
+      <div class="progress"><div style="width:${Math.round(n / BADGES.length * 100)}%"></div></div>
+    </div>
+    <div class="badges">${BADGES.map(b => {
+      const [c, t] = b.get(s);
+      const done = !!got[b.id];
+      return `<div class="badge-card ${done ? 'unlocked' : 'locked'}">
+        <div class="b-ico">${b.icon}</div><div class="b-title">${esc(b.title)}</div><div class="b-desc">${esc(b.desc)}</div>
+        ${done ? '<div class="b-desc" style="color:var(--green);font-weight:700;margin-top:6px">✔ הושג</div>'
+          : `<div class="progress"><div style="width:${Math.min(100, Math.round(c / t * 100))}%"></div></div><div class="b-desc" dir="ltr">${Math.min(c, t)} / ${t}</div>`}
+      </div>`;
+    }).join('')}</div>`;
+}
+
+/* =====================================================================
+   Automatic cloud backup (secret GitHub Gist)
+   Files: pokedex.json (cards without photos + extras) and photos-XX.json buckets,
+   so only changed parts are uploaded and each file stays small.
+   ===================================================================== */
+const cloud = { timer: null, busy: false, restoring: false };
+const GIST_API = 'https://api.github.com/gists';
+const GIST_DESC = 'Pokedex backup (הפוקדקס – גיבוי אוטומטי)';
+const PHOTO_BUCKETS = 16;
+const ghHeaders = () => ({ Authorization: 'Bearer ' + settings.get('ghToken'), Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' });
+function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); }
+
+function cloudStatus(text) {
+  const t = text || (settings.get('ghToken')
+    ? (lsGet('nitai-cloud', {}).lastBackup ? `✅ מופעל · גיבוי אחרון: ${new Date(lsGet('nitai-cloud', {}).lastBackup).toLocaleString('he-IL')}` : '✅ מופעל – ממתין לגיבוי ראשון')
+    : 'כבוי');
+  const el = $('#cloudStatus');
+  if (el) el.textContent = t;
+}
+
+onDbChange = () => {
+  if (cloud.restoring || !settings.get('ghToken')) return;
+  const c = lsGet('nitai-cloud', {}); c.dirty = true; lsSet('nitai-cloud', c);
+  clearTimeout(cloud.timer);
+  cloud.timer = setTimeout(() => cloudBackup().catch(() => {}), 8000);
+};
+
+async function buildBackupFiles() {
+  const items = await db.all();
+  const files = {};
+  const buckets = Array.from({ length: PHOTO_BUCKETS }, () => ({}));
+  for (const it of items) if (it.photo) buckets[parseInt(fnv(it.uid), 36) % PHOTO_BUCKETS][it.uid] = it.photo;
+  files['pokedex.json'] = JSON.stringify({
+    app: 'nitai-pokedex', version: 2, updatedAt: new Date().toISOString(),
+    profile: getProfile(), stats: lsGet('nitai-stats', {}), badges: lsGet('nitai-badges', {}),
+    history: lsGet('nitai-history', []), trade,
+    items: items.map(({ photo, ...rest }) => rest),
+  });
+  buckets.forEach((b, i) => { files[`photos-${String(i).padStart(2, '0')}.json`] = JSON.stringify(b); });
+  return files;
+}
+
+async function ghFetch(url, opts = {}) {
+  const res = await fetch(url, { ...opts, headers: { ...ghHeaders(), ...(opts.headers || {}) } });
+  if (!res.ok) { const e = new Error('GitHub ' + res.status); e.status = res.status; throw e; }
+  return res.json();
+}
+
+async function cloudBackup() {
+  if (!settings.get('ghToken') || cloud.busy || cloud.restoring) return;
+  cloud.busy = true;
+  cloudStatus('☁️ מגבה...');
+  try {
+    const c = lsGet('nitai-cloud', {});
+    const files = await buildBackupFiles();
+    const hashes = c.hashes || {};
+    const changed = {};
+    for (const [name, content] of Object.entries(files)) {
+      const h = fnv(content);
+      if (!c.gistId || hashes[name] !== h) changed[name] = { content };
+    }
+    if (!c.gistId) {
+      const g = await ghFetch(GIST_API, { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files: changed }) });
+      c.gistId = g.id;
+    } else if (Object.keys(changed).length) {
+      try {
+        await ghFetch(`${GIST_API}/${c.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: changed }) });
+      } catch (e) {
+        if (e.status !== 404) throw e;
+        const g = await ghFetch(GIST_API, { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, { content: v }])) }) });
+        c.gistId = g.id;
+      }
+    }
+    c.hashes = Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fnv(v)]));
+    c.lastBackup = Date.now();
+    c.dirty = false;
+    lsSet('nitai-cloud', c);
+    cloudStatus();
+  } catch (e) {
+    console.warn('cloud backup', e);
+    cloudStatus(e.status === 401 ? '❌ המפתח לא תקין או שפג תוקפו' : '⚠️ הגיבוי נכשל (אין אינטרנט?) – ננסה שוב בפעם הבאה');
+    throw e;
+  } finally {
+    cloud.busy = false;
+  }
+}
+
+async function findBackupGist() {
+  const c = lsGet('nitai-cloud', {});
+  if (c.gistId) {
+    try { return await ghFetch(`${GIST_API}/${c.gistId}`); } catch (e) { if (e.status !== 404) throw e; }
+  }
+  const list = await ghFetch(`${GIST_API}?per_page=100`);
+  const g = list.find(x => x.description === GIST_DESC && x.files && x.files['pokedex.json']);
+  return g ? ghFetch(`${GIST_API}/${g.id}`) : null;
+}
+
+async function cloudRestore() {
+  const g = await findBackupGist();
+  if (!g) { toast('לא נמצא גיבוי בענן'); return false; }
+  const read = async (f) => (f.truncated ? (await fetch(f.raw_url)).text() : f.content);
+  const meta = JSON.parse(await read(g.files['pokedex.json']));
+  const photos = {};
+  for (const [name, f] of Object.entries(g.files)) {
+    if (/^photos-\d+\.json$/.test(name)) Object.assign(photos, JSON.parse(await read(f)));
+  }
+  cloud.restoring = true;
+  try {
+    await db.clear();
+    for (const it of meta.items || []) await db.put({ ...it, photo: photos[it.uid] || null });
+    if (meta.profile) lsSet('nitai-profile', meta.profile);
+    if (meta.stats) lsSet('nitai-stats', meta.stats);
+    if (meta.badges) lsSet('nitai-badges', meta.badges);
+    if (meta.history) lsSet('nitai-history', meta.history);
+    if (meta.trade) { trade.give = meta.trade.give || []; trade.get = meta.trade.get || []; saveTrade(); }
+    const files = await buildBackupFiles();
+    lsSet('nitai-cloud', { gistId: g.id, lastBackup: Date.now(), dirty: false, hashes: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fnv(v)])) });
+  } finally {
+    cloud.restoring = false;
+  }
+  applyProfile();
+  $$('.welcome').forEach(w => w.remove());
+  cloudStatus();
+  toast(`☁️ שוחזרו ${(meta.items || []).length} קלפים מהענן`);
+  return true;
+}
+
+$('#btnCloudSave').addEventListener('click', async () => {
+  settings.set('ghToken', $('#setGhToken').value.trim());
+  if (!settings.get('ghToken')) { cloudStatus(); toast('הגיבוי בענן כובה'); return; }
+  try {
+    await ghFetch(GIST_API + '?per_page=1');
+  } catch (e) {
+    cloudStatus(e.status === 401 ? '❌ המפתח לא תקין' : '⚠️ לא הצלחתי להתחבר ל-GitHub');
+    return;
+  }
+  const items = await db.all();
+  if (!items.length) {
+    const g = await findBackupGist().catch(() => null);
+    if (g && confirm('נמצא גיבוי קיים בענן. לשחזר אותו לטלפון הזה?')) { await cloudRestore(); renderCollection(); return; }
+  }
+  try { await cloudBackup(); toast('☁️ הגיבוי האוטומטי מופעל!'); } catch (e) {}
+});
+$('#btnCloudNow').addEventListener('click', async () => {
+  if (!settings.get('ghToken')) { toast('קודם צריך להכניס מפתח GitHub'); return; }
+  try { await cloudBackup(); toast('☁️ גובה בהצלחה'); } catch (e) {}
+});
+$('#btnCloudRestore').addEventListener('click', async () => {
+  if (!settings.get('ghToken')) { toast('קודם צריך להכניס מפתח GitHub'); return; }
+  if (!confirm('לשחזר מהענן? האוסף שבטלפון יוחלף באוסף מהגיבוי.')) return;
+  try { await cloudRestore(); } catch (e) { cloudStatus(e.status === 401 ? '❌ המפתח לא תקין' : '⚠️ השחזור נכשל'); }
+});
+
+/* =====================================================================
    Boot
    ===================================================================== */
 renderRatesInfo();
 refreshRates().then(() => { if (currentView === 'collection') renderCollection(); });
+applyProfile();
+if (!getProfile()) showWelcome();
 renderCollection();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+setTimeout(() => autoRefreshPrices().catch(() => {}), 5000);
+if (settings.get('ghToken') && lsGet('nitai-cloud', {}).dirty) setTimeout(() => cloudBackup().catch(() => {}), 3000);
 
 /* ---- Install as an app on the phone ---- */
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;

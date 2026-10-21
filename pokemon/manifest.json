@@ -1,6 +1,6 @@
 {
-  "name": "הפוקדקס של ניתאי עשור",
-  "short_name": "הפוקדקס של ניתאי",
+  "name": "הפוקדקס – אוסף קלפי פוקימון",
+  "short_name": "הפוקדקס",
   "description": "אוסף קלפי פוקימון, זיהוי קלפים מתמונה והערכת שווי",
   "lang": "he",
   "dir": "rtl",
@@ -12,8 +12,20 @@
   "theme_color": "#e3350d",
   "id": "nitai-pokedex",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ]
 }

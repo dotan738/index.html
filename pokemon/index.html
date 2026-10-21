@@ -745,7 +745,10 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
     </div>
     <div class="panel">
       <h2>🗑️ איפוס</h2>
-      <p class="muted" id="appVersion" style="margin-bottom:8px"></p>
+      <div class="row" style="margin-bottom:10px">
+        <p class="muted grow" id="appVersion"></p>
+        <button class="btn btn-ghost" id="btnCheckUpdate">🔄 בדוק עדכונים</button>
+      </div>
       <button class="btn btn-ghost" id="btnClearAll" style="color:var(--red)">מחק את כל האוסף</button>
     </div>
   </section>
@@ -3422,7 +3425,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-9';
+const APP_VERSION = '2026.10.22-10';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;
@@ -3440,7 +3443,55 @@ if (settings.get('ghToken') && lsGet('nitai-cloud', {}).dirty) setTimeout(() => 
 /* ---- Install as an app on the phone ---- */
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 let installPrompt = null;
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch((e) => console.warn('sw', e));
+/* ---- Updates: always pick up a new version quickly ---- */
+let swReg = null;
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then((r) => { swReg = r; r.update().catch(() => {}); })
+    .catch((e) => console.warn('sw', e));
+  // a new service worker took over -> reload once so the new code runs
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && swReg) swReg.update().catch(() => {}); });
+}
+
+/** Version on the server (read from index.html without any cache). */
+async function serverVersion() {
+  const res = await fetch('index.html?v=' + Date.now(), { cache: 'no-store' });
+  const m = (await res.text()).match(/const APP_VERSION = '([^']+)'/);
+  return m ? m[1] : null;
+}
+async function forceUpdate() {
+  try { if (swReg) await swReg.unregister(); } catch (e) {}
+  try { for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+  location.replace(location.pathname + '?u=' + Date.now());
+}
+// on start: if the server already has a newer version, switch to it (once per session)
+setTimeout(async () => {
+  if (!navigator.onLine) return;
+  try {
+    const v = await serverVersion();
+    if (v && v !== APP_VERSION && sessionStorage.getItem('nitai-updated-to') !== v) {
+      sessionStorage.setItem('nitai-updated-to', v);
+      toast('⬆️ מעדכן לגרסה חדשה...');
+      setTimeout(forceUpdate, 900);
+    }
+  } catch (e) { /* offline or blocked – try next time */ }
+}, 1500);
+$('#btnCheckUpdate').addEventListener('click', async (e) => {
+  e.target.disabled = true;
+  try {
+    const v = await serverVersion();
+    if (v && v !== APP_VERSION) { toast('⬆️ נמצאה גרסה ' + v + ' – מעדכן...'); setTimeout(forceUpdate, 700); return; }
+    toast(v ? '✅ יש לך את הגרסה האחרונה' : 'לא הצלחתי לבדוק – אין אינטרנט?');
+  } catch (err) { toast('לא הצלחתי לבדוק – אין אינטרנט?'); }
+  e.target.disabled = false;
+});
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   installPrompt = e;

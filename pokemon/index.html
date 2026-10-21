@@ -1,0 +1,3287 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>הפוקדקס</title>
+<meta name="description" content="אפליקציית הפוקימון של ניתאי עשור – אוסף קלפים, זיהוי קלפים מתמונה והערכת שווי">
+<meta name="theme-color" content="#e3350d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="הפוקדקס">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root {
+  --red: #e3350d;
+  --red-dark: #b8290a;
+  --yellow: #ffcb05;
+  --blue: #2a75bb;
+  --navy: #1d2c5e;
+  --bg: #f3f5fa;
+  --card: #ffffff;
+  --text: #1c2233;
+  --muted: #6b7489;
+  --line: #e1e6f0;
+  --green: #1f9d55;
+  --shadow: 0 4px 16px rgba(29, 44, 94, 0.12);
+  --radius: 16px;
+  --nav-h: 68px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100%; }
+body {
+  font-family: 'Rubik', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+}
+button, input, select { font-family: inherit; font-size: 1rem; }
+[hidden] { display: none !important; }
+
+/* ---------- Header ---------- */
+.app-header {
+  background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+  color: #fff;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+  position: sticky; top: 0; z-index: 50;
+}
+.pokeball {
+  width: 44px; height: 44px; flex: none; border-radius: 50%;
+  background: linear-gradient(to bottom, #fff 0 46%, #222 46% 54%, #fff 54%);
+  border: 3px solid #222; position: relative;
+}
+.pokeball::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 46%;
+  background: var(--red); border-radius: 22px 22px 0 0;
+}
+.pokeball::after {
+  content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 3px solid #222; top: 50%; left: 50%; transform: translate(-50%, -50%);
+}
+.app-header h1 { font-size: 1.15rem; font-weight: 900; line-height: 1.15; }
+.app-header > div:nth-child(2) { min-width: 0; }
+.app-header .sub { font-size: 0.8rem; opacity: 0.85; }
+.install-btn {
+  margin-right: auto; border: none; background: var(--yellow); color: var(--navy); font-weight: 900;
+  border-radius: 12px; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;
+}
+
+main { max-width: 900px; margin: 0 auto; padding: 14px 14px 0; }
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff; border-top: 1px solid var(--line);
+  display: flex; box-shadow: 0 -3px 12px rgba(0,0,0,0.06);
+}
+.bottom-nav button {
+  flex: 1; border: none; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--muted); font-size: 0.75rem; font-weight: 500;
+}
+.bottom-nav button .ico { font-size: 1.45rem; line-height: 1; }
+.bottom-nav button.active { color: var(--red); font-weight: 700; }
+.bottom-nav button.scan-btn .ico {
+  background: var(--yellow); border-radius: 50%; width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center; margin-top: -22px;
+  border: 3px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+/* ---------- Generic ---------- */
+.panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+.panel h2 { font-size: 1.1rem; margin-bottom: 10px; }
+.muted { color: var(--muted); font-size: 0.88rem; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: none; border-radius: 12px; padding: 11px 18px; cursor: pointer;
+  font-weight: 700; transition: transform .1s, opacity .2s; text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-yellow { background: var(--yellow); color: var(--navy); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-ghost { background: #eef1f7; color: var(--navy); }
+.btn-block { width: 100%; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > .grow { flex: 1; min-width: 0; }
+input[type=text], input[type=password], input[type=search], input[type=tel], select {
+  width: 100%; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: #fff; color: var(--text); outline: none;
+}
+input:focus, select:focus { border-color: var(--blue); }
+label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px; color: var(--muted); }
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--nav-h) + 20px + env(safe-area-inset-bottom));
+  transform: translateX(-50%); background: var(--navy); color: #fff; padding: 11px 18px;
+  border-radius: 12px; z-index: 200; font-weight: 500; max-width: 90vw; text-align: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25); animation: pop .2s ease-out;
+}
+@keyframes pop { from { opacity: 0; transform: translate(-50%, 10px); } }
+.spinner {
+  width: 22px; height: 22px; border: 3px solid rgba(0,0,0,0.12); border-top-color: var(--red);
+  border-radius: 50%; animation: spin .8s linear infinite; flex: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Collection ---------- */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat { background: var(--card); border-radius: 14px; padding: 12px 8px; text-align: center; box-shadow: var(--shadow); }
+.stat .num { font-size: 1.35rem; font-weight: 900; color: var(--navy); }
+.stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.stat.value .num { color: var(--green); }
+.coll-tools { display: flex; gap: 8px; margin-bottom: 14px; }
+.coll-tools input { flex: 1; }
+.coll-tools select { width: auto; flex: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.tile {
+  background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow);
+  cursor: pointer; position: relative; transition: transform .12s;
+}
+.tile:active { transform: scale(0.97); }
+.tile .img { aspect-ratio: 63 / 88; background: #e9edf5 center / cover no-repeat; }
+.tile .info { padding: 8px 10px 10px; }
+.tile .name { font-weight: 700; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .set { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: ltr; text-align: right; }
+.tile .val { margin-top: 4px; font-weight: 900; color: var(--green); font-size: 0.95rem; }
+.tile .qty {
+  position: absolute; top: 8px; left: 8px; background: var(--yellow); color: var(--navy);
+  font-weight: 900; border-radius: 10px; padding: 2px 8px; font-size: 0.8rem;
+}
+.empty { text-align: center; padding: 40px 20px; }
+.empty .big { font-size: 3.5rem; }
+.empty h3 { margin: 10px 0 6px; }
+
+/* ---------- Capture ---------- */
+.cap-title { font-size: 1.15rem; font-weight: 900; margin-bottom: 4px; }
+.cam-wrap {
+  position: relative; width: min(100%, calc(62vh * 0.75)); aspect-ratio: 3 / 4; margin: 10px auto;
+  background: #111; border-radius: 18px; overflow: hidden;
+}
+.cam-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.guide {
+  position: absolute; left: 50%; top: 50%; height: 82%; aspect-ratio: 63 / 88;
+  transform: translate(-50%, -50%); border: 3px dashed var(--yellow); border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); pointer-events: none;
+}
+.cam-msg {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: #fff; text-align: center; padding: 24px; font-size: 0.95rem; line-height: 1.5;
+}
+.cam-hint {
+  position: absolute; top: 10px; left: 0; right: 0; text-align: center; color: #fff;
+  font-size: 0.85rem; text-shadow: 0 1px 3px #000; pointer-events: none;
+}
+.cam-actions { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 8px 0 14px; }
+.shutter {
+  width: 74px; height: 74px; border-radius: 50%; border: 5px solid var(--red);
+  background: #fff; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+.shutter:active { background: var(--yellow); }
+.round-btn {
+  width: 54px; height: 54px; border-radius: 50%; background: #fff; border: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+  font-size: 1.35rem; box-shadow: var(--shadow); position: relative;
+}
+.round-btn small { font-size: 0.6rem; color: var(--muted); position: absolute; bottom: -18px; white-space: nowrap; }
+.adjust-wrap { position: relative; margin: 10px auto; max-width: 100%; width: fit-content; touch-action: none; }
+.adjust-wrap img { display: block; max-width: 100%; max-height: 62vh; border-radius: 10px; user-select: none; -webkit-user-drag: none; }
+.adjust-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.ident-head { display: flex; gap: 14px; align-items: flex-start; }
+.ident-head canvas, .ident-head img.thumb { width: 120px; border-radius: 8px; box-shadow: var(--shadow); flex: none; }
+.status-list { list-style: none; font-size: 0.9rem; flex: 1; }
+.status-list li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.status-list .ok { color: var(--green); }
+.status-list .err { color: var(--red); }
+.cands { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-top: 12px; }
+.cand { background: #fff; border-radius: 12px; overflow: hidden; border: 2px solid var(--line); cursor: pointer; position: relative; }
+.cand.best { border-color: var(--green); }
+.cand img { width: 100%; aspect-ratio: 63 / 88; object-fit: cover; display: block; background: #eef1f7; }
+.cand .cap { padding: 5px 7px; font-size: 0.72rem; line-height: 1.3; direction: ltr; text-align: left; }
+.cand .cap b { display: block; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cand .badge {
+  position: absolute; top: 6px; right: 6px; background: var(--green); color: #fff; font-size: 0.7rem;
+  font-weight: 700; padding: 2px 7px; border-radius: 8px;
+}
+
+/* ---------- Result ---------- */
+.result-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.result-imgs figure { text-align: center; }
+.result-imgs img, .result-imgs canvas { width: 100%; border-radius: 10px; box-shadow: var(--shadow); aspect-ratio: 63/88; object-fit: cover; background: #eef1f7; }
+.result-imgs figcaption { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+.card-title { font-size: 1.35rem; font-weight: 900; direction: ltr; text-align: right; }
+.card-meta { color: var(--muted); font-size: 0.85rem; direction: ltr; text-align: right; margin-top: 2px; }
+.value-box {
+  background: linear-gradient(135deg, #fff8d6, #ffe98a); border-radius: 16px; padding: 16px; text-align: center;
+  margin: 14px 0; border: 2px solid var(--yellow);
+}
+.value-box .lbl { font-size: 0.85rem; color: #6a5a10; font-weight: 500; }
+.value-box .big { font-size: 2.3rem; font-weight: 900; color: var(--navy); line-height: 1.2; }
+.value-box .range { font-size: 0.82rem; color: #6a5a10; }
+.price-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+.price-table th, .price-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+.price-table th { color: var(--muted); font-weight: 500; font-size: 0.78rem; }
+.price-table td.num { direction: ltr; text-align: left; white-space: nowrap; }
+.src-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.src-links a { font-size: 0.8rem; color: var(--blue); }
+.qty-ctrl { display: inline-flex; align-items: center; gap: 10px; }
+.qty-ctrl button { width: 36px; height: 36px; border-radius: 10px; border: none; background: #eef1f7; font-size: 1.2rem; font-weight: 700; cursor: pointer; }
+.qty-ctrl span { min-width: 24px; text-align: center; font-weight: 700; font-size: 1.1rem; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ---------- Modal ---------- */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(15, 20, 40, 0.6); z-index: 100;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.modal {
+  background: var(--bg); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto;
+  border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+  animation: up .2s ease-out;
+}
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+.modal .close { float: left; border: none; background: #e3e8f2; width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; }
+.img-toggle { display: flex; gap: 6px; justify-content: center; margin: 10px 0; }
+.img-toggle button { border: none; background: #e3e8f2; padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 0.82rem; }
+.img-toggle button.on { background: var(--navy); color: #fff; }
+.modal .main-img { display: block; width: min(70%, 300px); margin: 0 auto; border-radius: 12px; box-shadow: var(--shadow); aspect-ratio: 63/88; object-fit: cover; }
+
+/* ---------- Trade ---------- */
+.trade-side h2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.trade-side h2 .tot { font-size: 1rem; color: var(--green); font-weight: 900; }
+.trade-side.give { border-top: 5px solid var(--red); }
+.trade-side.get { border-top: 5px solid var(--blue); }
+.t-item { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.t-item:last-of-type { border-bottom: none; }
+.t-item img { width: 52px; aspect-ratio: 63/88; object-fit: cover; border-radius: 6px; background: #eef1f7; flex: none; }
+.t-item .t-info { flex: 1; min-width: 0; }
+.t-item .t-name { font-weight: 700; font-size: 0.92rem; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-item .t-sub { font-size: 0.72rem; color: var(--muted); direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-item .t-selects { display: flex; gap: 6px; margin-top: 5px; }
+.t-item select { padding: 5px 6px; font-size: 0.78rem; border-radius: 8px; }
+.t-item .t-val { font-weight: 900; color: var(--navy); white-space: nowrap; font-size: 0.95rem; }
+.t-item .t-del { border: none; background: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); padding: 4px; }
+.t-empty { color: var(--muted); font-size: 0.88rem; padding: 6px 0 10px; }
+.trade-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.trade-actions .btn { flex: 1; padding: 10px 8px; font-size: 0.85rem; }
+.verdict { border-radius: 18px; padding: 18px 16px; text-align: center; margin-bottom: 14px; box-shadow: var(--shadow); }
+.verdict .v-emoji { font-size: 2.6rem; line-height: 1; }
+.verdict .v-title { font-size: 1.35rem; font-weight: 900; margin-top: 6px; }
+.verdict .v-text { font-size: 0.92rem; margin-top: 6px; line-height: 1.5; }
+.verdict.good { background: #e3f7ea; color: #145c33; border: 2px solid #4cc27a; }
+.verdict.fair { background: #e8f0fb; color: #1d3f72; border: 2px solid #6d9de0; }
+.verdict.bad { background: #fff1d6; color: #7a4a00; border: 2px solid #f0b13c; }
+.verdict.terrible { background: #fde4e0; color: #8a1d0c; border: 2px solid #ec6b55; }
+.verdict.none, .verdict.noprice { background: #fff; color: var(--muted); border: 2px dashed var(--line); }
+.scale { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin: 12px 0 4px; background: #e6e9f0; }
+.scale .s-give { background: var(--red); }
+.scale .s-get { background: var(--blue); }
+.scale-lbl { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; }
+.tips { list-style: none; margin-top: 10px; text-align: right; }
+.tips li { font-size: 0.85rem; padding: 3px 0; }
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 12px; }
+.pick-grid .tile .name { font-size: 0.8rem; }
+.pick-grid .tile.used { opacity: 0.35; pointer-events: none; }
+
+/* ---------- Sub tabs ---------- */
+.subtabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+.subtabs::-webkit-scrollbar { display: none; }
+.subtabs button {
+  flex: 1; white-space: nowrap; border: none; background: #fff; color: var(--navy); padding: 9px 10px;
+  border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: var(--shadow);
+}
+.subtabs button.on { background: var(--navy); color: #fff; }
+
+/* ---------- Sets ---------- */
+.set-row { display: flex; gap: 12px; align-items: center; padding: 12px; background: #fff; border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 10px; cursor: pointer; }
+.set-row .s-info { flex: 1; min-width: 0; }
+.set-row .s-name { font-weight: 700; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-row .s-sub { font-size: 0.75rem; color: var(--muted); }
+.set-row .s-pct { font-weight: 900; font-size: 1.1rem; color: var(--navy); min-width: 48px; text-align: center; }
+.progress { height: 10px; background: #e6e9f0; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.progress > div { height: 100%; background: var(--blue); border-radius: 6px; }
+.progress.done > div { background: var(--green); }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; margin-top: 12px; }
+.set-card { position: relative; cursor: pointer; }
+.set-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: 6px; background: #e3e8f2; display: block; }
+.set-card.missing img { filter: grayscale(1); opacity: 0.35; }
+.set-card .n { position: absolute; bottom: 3px; left: 3px; background: rgba(0,0,0,.65); color: #fff; font-size: 0.65rem; padding: 1px 5px; border-radius: 6px; direction: ltr; }
+.set-card .ok { position: absolute; top: 3px; right: 3px; background: var(--green); color: #fff; font-size: 0.7rem; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.filter-row { display: flex; gap: 6px; margin-top: 10px; }
+.filter-row button { flex: 1; border: none; background: #e3e8f2; padding: 7px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; }
+.filter-row button.on { background: var(--navy); color: #fff; }
+
+/* ---------- Value chart ---------- */
+.hero-val { font-size: 2.2rem; font-weight: 900; color: var(--navy); line-height: 1.1; }
+.delta { font-size: 0.88rem; font-weight: 700; margin-top: 4px; }
+.delta.up { color: #15803d; }
+.delta.down { color: #b91c1c; }
+.chart-wrap { position: relative; margin-top: 12px; direction: ltr; }
+.chart-wrap svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart-tip {
+  position: absolute; top: 0; transform: translateX(-50%); background: var(--navy); color: #fff; font-size: 0.78rem;
+  padding: 5px 9px; border-radius: 8px; pointer-events: none; white-space: nowrap; direction: rtl; text-align: center;
+}
+.mover { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.mover:last-child { border-bottom: none; }
+.mover img { width: 40px; aspect-ratio: 63/88; object-fit: cover; border-radius: 5px; background: #eef1f7; }
+.mover .m-name { flex: 1; min-width: 0; font-weight: 700; font-size: 0.88rem; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mover .m-ch { font-weight: 900; font-size: 0.88rem; white-space: nowrap; text-align: left; }
+.mover .m-ch small { display: block; font-weight: 500; color: var(--muted); font-size: 0.72rem; }
+
+/* ---------- Achievements ---------- */
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.badge-card { background: #fff; border-radius: 14px; padding: 12px 10px; text-align: center; box-shadow: var(--shadow); }
+.badge-card .b-ico { font-size: 2.1rem; }
+.badge-card .b-title { font-weight: 900; font-size: 0.9rem; margin-top: 4px; }
+.badge-card .b-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.badge-card.locked .b-ico { filter: grayscale(1); opacity: 0.35; }
+.badge-card.locked .b-title { color: var(--muted); }
+.badge-card.unlocked { border: 2px solid var(--yellow); background: #fffbea; }
+.badge-card .progress { height: 6px; }
+.celebrate {
+  position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center;
+  background: rgba(15,20,40,.55); animation: pop .2s ease-out;
+}
+.celebrate .box { background: #fff; border-radius: 22px; padding: 26px 22px; text-align: center; max-width: 320px; width: 86vw; border: 4px solid var(--yellow); }
+.celebrate .big { font-size: 4rem; animation: bounce 0.8s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px) scale(1.08); } }
+
+/* ---------- Header buttons / welcome ---------- */
+.hdr-btns { margin-right: auto; display: flex; gap: 6px; }
+.hdr-btns .install-btn { margin-right: 0; }
+.invite-btn { border: none; background: rgba(255,255,255,.2); color: #fff; border-radius: 12px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+.welcome { position: fixed; inset: 0; z-index: 400; background: linear-gradient(160deg, var(--red), var(--red-dark)); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.welcome .box { background: #fff; border-radius: 24px; padding: 26px 20px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+.welcome .pokeball { margin: 0 auto 10px; width: 64px; height: 64px; }
+.welcome h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 4px; }
+.welcome form { text-align: right; margin-top: 16px; }
+.welcome .err { color: var(--red); font-size: 0.82rem; min-height: 1.2em; margin-top: 4px; }
+.wa-btn { background: #25d366; color: #fff; }
+.invite-btn, .install-btn { padding: 8px 10px; font-size: 1rem; }
+.wide-only { display: none; font-size: 0.85rem; }
+@media (min-width: 480px) { .wide-only { display: inline; } }
+
+@media (min-width: 700px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .modal-bg { align-items: center; }
+  .modal { border-radius: 22px; }
+}
+/* ================= Design refresh ================= */
+body {
+  background:
+    radial-gradient(circle at 100% 0, rgba(255, 203, 5, 0.18), transparent 40%),
+    radial-gradient(circle at 0 30%, rgba(42, 117, 187, 0.10), transparent 45%),
+    var(--bg);
+}
+.app-header {
+  background: linear-gradient(120deg, #ff4f2b 0%, var(--red) 45%, var(--red-dark) 100%);
+  overflow: hidden;
+}
+.app-header::after {
+  content: ''; position: absolute; left: -40px; top: -50px; width: 170px; height: 170px; border-radius: 50%;
+  border: 22px solid rgba(255, 255, 255, 0.08); pointer-events: none;
+}
+.app-header h1 { letter-spacing: -0.3px; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
+.panel { border-radius: 20px; border: 1px solid rgba(29, 44, 94, 0.05); }
+.btn { box-shadow: 0 2px 6px rgba(29, 44, 94, 0.12); }
+.btn-ghost { box-shadow: none; }
+
+/* stats: hero value card + two small counters */
+.stats { grid-template-columns: 1fr 1fr; }
+.stat { border-radius: 16px; }
+.stat.value {
+  grid-column: 1 / -1; padding: 16px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--navy) 0%, #2d4a8a 60%, var(--blue) 100%); color: #fff;
+}
+.stat.value::after {
+  content: '⚡'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%) rotate(-12deg);
+  font-size: 3.4rem; opacity: 0.18;
+}
+.stat.value .num { color: var(--yellow); font-size: 2.3rem; line-height: 1.15; }
+.stat.value .lbl { color: rgba(255, 255, 255, 0.85); font-size: 0.85rem; margin: 0 0 2px; }
+
+/* card tiles */
+.grid { gap: 14px; }
+.tile { border-radius: 16px; padding: 6px; box-shadow: 0 6px 18px rgba(29, 44, 94, 0.13); transition: transform .15s, box-shadow .15s; }
+.tile .img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; border-radius: 10px; background: linear-gradient(135deg, #eef1f7, #dfe5f0); }
+.tile .info { padding: 8px 4px 4px; }
+.tile .val { display: inline-block; background: #e3f7ea; color: #15803d; border-radius: 8px; padding: 2px 8px; font-size: 0.88rem; }
+.tile.shiny { background: linear-gradient(135deg, #ffe259, #ff9a9e, #a18cd1, #84fab0, #8fd3f4); }
+.tile.shiny .info { background: #fff; border-radius: 0 0 10px 10px; margin: -4px 0 0; padding: 8px 8px 6px; }
+.tile.shiny .img { border-radius: 10px 10px 0 0; }
+.tile .qty { top: 12px; left: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+
+/* sub tabs as a segmented control */
+.subtabs { background: #fff; padding: 4px; border-radius: 14px; box-shadow: var(--shadow); gap: 2px; }
+.subtabs button { box-shadow: none; background: transparent; border-radius: 10px; }
+.subtabs button.on { background: var(--navy); color: #fff; box-shadow: 0 2px 6px rgba(29,44,94,.3); }
+
+/* bottom nav: pill behind the active icon */
+.bottom-nav { border-top: none; box-shadow: 0 -4px 20px rgba(29, 44, 94, 0.10); border-radius: 18px 18px 0 0; }
+.bottom-nav button .ico { padding: 4px 14px; border-radius: 14px; transition: background .2s; }
+.bottom-nav button.active .ico { background: rgba(227, 53, 13, 0.12); }
+.bottom-nav button.scan-btn .ico { padding: 0; }
+.bottom-nav button.scan-btn.active .ico { background: var(--yellow); box-shadow: 0 0 0 4px rgba(255, 203, 5, 0.35), 0 3px 10px rgba(0,0,0,.2); }
+
+/* value box on the result screen */
+.value-box { background: linear-gradient(135deg, #fff6c7, #ffe57a 60%, #ffd23f); border: none; box-shadow: 0 6px 18px rgba(255, 180, 0, 0.3); }
+.value-box .big { font-size: 2.6rem; }
+
+/* candidate cards */
+.cand { border-radius: 14px; box-shadow: 0 3px 10px rgba(29,44,94,.10); transition: transform .12s; }
+.cand:active { transform: scale(0.97); }
+.cand.best { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,157,85,.25), 0 6px 16px rgba(29,44,94,.15); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="pokeball" aria-hidden="true"></div>
+  <div>
+    <h1 id="appTitle">הפוקדקס</h1>
+    <div class="sub">אוסף קלפי הפוקימון שלי ⚡</div>
+  </div>
+  <div class="hdr-btns">
+    <button class="invite-btn" data-invite aria-label="הזמן חבר בוואטסאפ" title="הזמן חבר">📣<span class="wide-only"> הזמן חבר</span></button>
+    <button class="install-btn" id="btnInstall" hidden>📲<span class="wide-only"> התקן</span></button>
+  </div>
+</header>
+
+<main>
+  <!-- ===== Collection ===== -->
+  <section id="view-collection">
+    <div class="stats">
+      <div class="stat value"><div class="lbl">💰 שווי האוסף שלי</div><div class="num" id="statValue">₪0</div></div>
+      <div class="stat"><div class="num" id="statCount">0</div><div class="lbl">קלפים</div></div>
+      <div class="stat"><div class="num" id="statUnique">0</div><div class="lbl">קלפים שונים</div></div>
+    </div>
+    <div class="subtabs" id="collTabs">
+      <button data-ctab="cards" class="on">🃏 קלפים</button>
+      <button data-ctab="sets">🧩 סטים</button>
+      <button data-ctab="chart">📈 שווי</button>
+      <button data-ctab="badges">🏆 הישגים</button>
+    </div>
+    <div id="ctab-cards">
+    <div class="coll-tools">
+      <input type="search" id="collSearch" placeholder="🔍 חיפוש באוסף...">
+      <select id="collSort" aria-label="מיון">
+        <option value="value">הכי שווים</option>
+        <option value="new">חדשים</option>
+        <option value="name">לפי שם</option>
+        <option value="set">לפי סט</option>
+      </select>
+    </div>
+    <div id="collGrid" class="grid"></div>
+    <div id="collEmpty" class="empty panel" hidden>
+      <div class="big">📭</div>
+      <h3>האוסף עוד ריק</h3>
+      <p class="muted">צלם את הקלף הראשון שלך ונתחיל!</p>
+      <button class="btn btn-red" style="margin-top:14px" data-go="add">📷 הוסף קלף ראשון</button>
+    </div>
+    <div class="row" style="margin-top:14px" id="collFooter" hidden>
+      <button class="btn btn-ghost grow" id="btnRefreshAll">🔄 עדכן מחירים לכל האוסף</button>
+    </div>
+    </div>
+    <div id="ctab-sets" hidden></div>
+    <div id="ctab-chart" hidden></div>
+    <div id="ctab-badges" hidden></div>
+  </section>
+
+  <!-- ===== Capture (add / value scan) ===== -->
+  <section id="view-capture" hidden>
+    <div class="cap-title" id="capTitle"></div>
+    <div class="muted" id="capSub"></div>
+
+    <!-- Step: camera -->
+    <div id="stepCamera">
+      <div class="cam-wrap" id="camWrap">
+        <video id="camVideo" playsinline muted autoplay></video>
+        <div class="guide" id="camGuide"></div>
+        <div class="cam-hint">שים את הקלף בתוך המסגרת הצהובה</div>
+        <div class="cam-msg" id="camMsg" hidden></div>
+      </div>
+      <div class="cam-actions">
+        <label class="round-btn" title="מהגלריה">🖼️<small>מהגלריה</small>
+          <input type="file" accept="image/*" id="fileGallery" hidden>
+        </label>
+        <button class="shutter" id="btnShutter" aria-label="צלם"></button>
+        <label class="round-btn" title="מצלמת הטלפון">📸<small>מצלמה</small>
+          <input type="file" accept="image/*" capture="environment" id="fileCamera" hidden>
+        </label>
+      </div>
+      <div class="panel" style="margin-top:22px">
+        <label class="field" for="manualQuery">אין תמונה? אפשר לחפש קלף לפי שם ומספר</label>
+        <form class="row" id="manualForm">
+          <input type="text" class="grow" id="manualQuery" placeholder="לדוגמה: Pikachu 25/165" dir="ltr">
+          <button class="btn btn-blue" type="submit">חפש</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Step: adjust corners -->
+    <div id="stepAdjust" hidden>
+      <p class="muted" style="margin-top:8px">גרור את 4 הנקודות לפינות של הקלף. הקו הצהוב העבה = החלק העליון של הקלף.</p>
+      <div class="adjust-wrap" id="adjustWrap">
+        <img id="adjustImg" alt="">
+        <svg id="adjustSvg"></svg>
+      </div>
+      <div class="row" style="justify-content:center">
+        <button class="btn btn-ghost" id="btnRetake">↩️ צלם שוב</button>
+        <button class="btn btn-ghost" id="btnRotate">↻ סובב</button>
+        <button class="btn btn-red" id="btnAdjustOk">✓ המשך</button>
+      </div>
+      <p class="muted" id="detectNote" style="text-align:center;margin-top:8px"></p>
+    </div>
+
+    <!-- Step: identify -->
+    <div id="stepIdentify" hidden>
+      <div class="panel">
+        <div class="ident-head">
+          <canvas id="identCanvas"></canvas>
+          <ul class="status-list" id="identStatus"></ul>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 id="candTitle">איזה קלף זה?</h2>
+        <form class="row" id="identSearchForm">
+          <input type="text" class="grow" id="identQuery" placeholder="שם הקלף ומספר, לדוגמה: Charizard 4/102" dir="ltr">
+          <button class="btn btn-blue" type="submit">חפש</button>
+        </form>
+        <div class="cands" id="candGrid"></div>
+        <p class="muted" id="candNote" style="margin-top:10px"></p>
+      </div>
+      <button class="btn btn-ghost btn-block" id="btnIdentBack">↩️ צלם קלף אחר</button>
+    </div>
+
+    <!-- Step: result -->
+    <div id="stepResult" hidden></div>
+  </section>
+
+  <!-- ===== Trade ===== -->
+  <section id="view-trade" hidden>
+    <div class="cap-title">🤝 בודק טריידים</div>
+    <p class="muted" style="margin-bottom:12px">שים את הקלפים שאתה נותן ואת הקלפים שהחבר נותן לך – ואני אגיד לך אם הטרייד משתלם.</p>
+    <div id="tradeVerdict"></div>
+    <div class="panel trade-side give">
+      <h2><span>📤 אני נותן</span><span class="tot" id="tradeGiveTot">₪0</span></h2>
+      <div id="tradeGiveList"></div>
+      <div class="trade-actions">
+        <button class="btn btn-ghost" data-trade-pick>📚 מהאוסף שלי</button>
+        <button class="btn btn-ghost" data-trade-scan="give">📷 סרוק</button>
+        <button class="btn btn-ghost" data-trade-search="give">🔍 חפש</button>
+      </div>
+    </div>
+    <div class="panel trade-side get">
+      <h2><span>📥 אני מקבל מהחבר</span><span class="tot" id="tradeGetTot">₪0</span></h2>
+      <div id="tradeGetList"></div>
+      <div class="trade-actions">
+        <button class="btn btn-blue" data-trade-scan="get">📷 סרוק קלף של החבר</button>
+        <button class="btn btn-ghost" data-trade-search="get">🔍 חפש</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-green grow" id="btnTradeDo">✅ עשינו טרייד – עדכן את האוסף</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-ghost grow" id="btnTradeClear">🧹 טרייד חדש</button>
+    </div>
+  </section>
+
+  <!-- ===== Settings ===== -->
+  <section id="view-settings" hidden>
+    <div class="panel">
+      <h2>👤 הפרופיל שלי</h2>
+      <label class="field" for="profName">שם</label>
+      <input type="text" id="profName" autocomplete="name">
+      <label class="field" for="profPhone" style="margin-top:10px">טלפון</label>
+      <input type="tel" id="profPhone" dir="ltr" inputmode="tel" autocomplete="tel">
+      <div class="err" id="profErr" style="color:var(--red);font-size:.82rem;min-height:1.2em"></div>
+      <button class="btn btn-blue" id="btnSaveProfile">שמור</button>
+    </div>
+    <div class="panel">
+      <h2>📣 הזמנת חברים</h2>
+      <p class="muted" style="margin-bottom:10px">שלח לחבר הזמנה בוואטסאפ עם קישור להורדת האפליקציה.</p>
+      <button class="btn wa-btn btn-block" data-invite>💬 הזמן חבר בוואטסאפ</button>
+    </div>
+    <div class="panel">
+      <h2>💱 שערי מטבע</h2>
+      <p class="muted" id="ratesInfo"></p>
+      <button class="btn btn-ghost" id="btnRates" style="margin-top:10px">🔄 עדכן שערים</button>
+    </div>
+    <div class="panel">
+      <h2>🤖 זיהוי חכם (אופציונלי)</h2>
+      <p class="muted" style="margin-bottom:10px">
+        בלי מפתח – האפליקציה מזהה את הקלף ע"י קריאת הטקסט (OCR) והשוואת תמונות.
+        עם מפתח Claude API – הזיהוי הרבה יותר מדויק (גם לקלפים מבריקים, עקומים או ביפנית).
+        המפתח נשמר רק בטלפון הזה.
+      </p>
+      <label class="field" for="setAnthropic">מפתח Anthropic API</label>
+      <input type="password" id="setAnthropic" dir="ltr" placeholder="sk-ant-...">
+      <label class="field" for="setPtcg" style="margin-top:12px">מפתח pokemontcg.io (לא חובה – מגדיל מכסת חיפושים)</label>
+      <input type="password" id="setPtcg" dir="ltr" placeholder="">
+      <button class="btn btn-blue" id="btnSaveSettings" style="margin-top:12px">שמור</button>
+    </div>
+    <div class="panel">
+      <h2>💾 גיבוי</h2>
+      <p class="muted" style="margin-bottom:10px">האוסף נשמר בדפדפן של הטלפון. כדאי לגבות מדי פעם לקובץ.</p>
+      <div class="row">
+        <button class="btn btn-ghost" id="btnExport">⬇️ שמור / שתף גיבוי</button>
+        <label class="btn btn-ghost">⬆️ ייבוא גיבוי<input type="file" accept="application/json,.json" id="fileImport" hidden></label>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>☁️ גיבוי אוטומטי בענן</h2>
+      <p class="muted" style="margin-bottom:10px">
+        כשזה מופעל, כל שינוי באוסף (כולל התמונות) נשמר אוטומטית בגיבוי סודי בחשבון GitHub שלך.
+        אם מחליפים או מאבדים טלפון – מכניסים את אותו מפתח ולוחצים "שחזר מהענן".
+      </p>
+      <ol class="muted" style="padding-right:18px;line-height:1.7;margin-bottom:10px;font-size:.82rem">
+        <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Pokedex%20backup" target="_blank" rel="noopener">לחץ כאן ליצירת מפתח ב-GitHub</a> (רק הרשאת gist מסומנת)</li>
+        <li>בחר תוקף ("Expiration") – למשל No expiration – ולחץ Generate token</li>
+        <li>העתק את המפתח והדבק כאן</li>
+      </ol>
+      <label class="field" for="setGhToken">מפתח GitHub</label>
+      <input type="password" id="setGhToken" dir="ltr" placeholder="ghp_...">
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-blue" id="btnCloudSave">שמור והפעל</button>
+        <button class="btn btn-ghost" id="btnCloudNow">☁️ גבה עכשיו</button>
+        <button class="btn btn-ghost" id="btnCloudRestore">⤵️ שחזר מהענן</button>
+      </div>
+      <p class="muted" id="cloudStatus" style="margin-top:10px"></p>
+    </div>
+    <div class="panel">
+      <h2>📚 מקורות המידע</h2>
+      <ul class="muted" style="padding-right:18px;line-height:1.8">
+        <li><a href="https://pokemontcg.io" target="_blank" rel="noopener">Pokémon TCG API</a> – מאגר כל הקלפים + מחירי TCGplayer (ארה"ב, $) ו-Cardmarket (אירופה, €)</li>
+        <li><a href="https://tcgdex.dev" target="_blank" rel="noopener">TCGdex</a> – מאגר גיבוי עם מחירים</li>
+        <li><a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">ExchangeRate-API</a> – שערי דולר/אירו לשקל</li>
+      </ul>
+      <p class="muted" style="margin-top:8px">ההערכה מבוססת על מחירי שוק של קלפים בודדים (לא מדורגים). מחיר אמיתי במכירה תלוי במצב הקלף ובקונה.</p>
+    </div>
+    <div class="panel">
+      <h2>🗑️ איפוס</h2>
+      <p class="muted" id="appVersion" style="margin-bottom:8px"></p>
+      <button class="btn btn-ghost" id="btnClearAll" style="color:var(--red)">מחק את כל האוסף</button>
+    </div>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <button data-go="collection" class="active"><span class="ico">📚</span>האוסף שלי</button>
+  <button data-go="add"><span class="ico">➕</span>הוסף קלף</button>
+  <button data-go="value" class="scan-btn"><span class="ico">💰</span>כמה זה שווה?</button>
+  <button data-go="trade"><span class="ico">🤝</span>טרייד</button>
+  <button data-go="settings"><span class="ico">⚙️</span>הגדרות</button>
+</nav>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const num = (v) => (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
+
+function fmtILS(v) {
+  if (v == null || !isFinite(v)) return '—';
+  const digits = v < 10 ? 2 : 0;
+  return '₪' + v.toLocaleString('he-IL', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+function fmtMoney(v, sym) {
+  if (v == null) return '—';
+  return sym + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function toast(msg, ms = 2600) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+async function fetchJSON(url, opts = {}, timeoutMs = 20000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: ctrl.signal });
+    if (!res.ok) {
+      const err = new Error('HTTP ' + res.status);
+      err.status = res.status;
+      throw err;
+    }
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const scriptCache = {};
+function loadScript(src, timeoutMs = 60000) {
+  if (scriptCache[src]) return scriptCache[src];
+  scriptCache[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    const timer = setTimeout(() => reject(new Error('timeout ' + src)), timeoutMs);
+    s.onload = () => { clearTimeout(timer); resolve(); };
+    s.onerror = () => { clearTimeout(timer); reject(new Error('failed ' + src)); };
+    document.head.appendChild(s);
+  });
+  scriptCache[src].catch(() => { delete scriptCache[src]; });
+  return scriptCache[src];
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+const normName = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const baseName = (s) => String(s || '').replace(/\b(ex|gx|v|vmax|vstar|v-union|break|lv\.?\s*x|prime|legend|star|δ)\b/gi, '').replace(/['’]s\b/gi, '').trim();
+function nameSimilarity(a, b) {
+  const sim = (x, y) => {
+    x = normName(x); y = normName(y);
+    if (!x || !y) return 0;
+    return 1 - levenshtein(x, y) / Math.max(x.length, y.length);
+  };
+  return Math.max(sim(a, b), sim(baseName(a), baseName(b)));
+}
+const stripZeros = (n) => String(n || '').replace(/^0+(?=\d)/, '');
+
+/* =====================================================================
+   Settings & exchange rates
+   ===================================================================== */
+const settings = (() => {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem('nitai-settings') || '{}'); } catch (e) { s = {}; }
+  return {
+    get: (k) => s[k] || '',
+    set: (k, v) => { s[k] = v; try { localStorage.setItem('nitai-settings', JSON.stringify(s)); } catch (e) {} },
+  };
+})();
+
+const rates = { USD: 3.7, EUR: 4.0, at: null, live: false };
+(function loadCachedRates() {
+  try {
+    const c = JSON.parse(localStorage.getItem('nitai-rates') || 'null');
+    if (c && c.USD && c.EUR) Object.assign(rates, c);
+  } catch (e) {}
+})();
+
+async function refreshRates(force = false) {
+  if (!force && rates.live && rates.at && Date.now() - rates.at < 12 * 3600 * 1000) return;
+  try {
+    const d = await fetchJSON('https://open.er-api.com/v6/latest/USD', {}, 10000);
+    const ils = d && d.rates && d.rates.ILS, eur = d && d.rates && d.rates.EUR;
+    if (ils && eur) {
+      rates.USD = ils;
+      rates.EUR = ils / eur;
+      rates.at = Date.now();
+      rates.live = true;
+      try { localStorage.setItem('nitai-rates', JSON.stringify(rates)); } catch (e) {}
+    }
+  } catch (e) {
+    console.warn('rates failed', e);
+  }
+  renderRatesInfo();
+}
+function renderRatesInfo() {
+  const when = rates.at ? new Date(rates.at).toLocaleString('he-IL') : 'ברירת מחדל (לא עודכן)';
+  $('#ratesInfo').textContent = `$1 = ₪${rates.USD.toFixed(3)} · €1 = ₪${rates.EUR.toFixed(3)} · עודכן: ${when}`;
+}
+
+/* =====================================================================
+   Storage (IndexedDB)
+   ===================================================================== */
+let onDbChange = () => {};
+const db = (() => {
+  let dbp = null;
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((resolve, reject) => {
+      const req = indexedDB.open('nitai-pokedex', 1);
+      req.onupgradeneeded = () => {
+        const d = req.result;
+        if (!d.objectStoreNames.contains('cards')) d.createObjectStore('cards', { keyPath: 'uid' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbp;
+  }
+  async function tx(mode, fn) {
+    const d = await open();
+    return new Promise((resolve, reject) => {
+      const t = d.transaction('cards', mode);
+      const store = t.objectStore('cards');
+      let result;
+      const r = fn(store);
+      if (r) r.onsuccess = () => { result = r.result; };
+      t.oncomplete = () => resolve(result);
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('transaction aborted'));
+    });
+  }
+  return {
+    all: () => tx('readonly', s => s.getAll()),
+    get: (uid) => tx('readonly', s => s.get(uid)),
+    put: (item) => tx('readwrite', s => s.put(item)).then(r => { onDbChange(); return r; }),
+    del: (uid) => tx('readwrite', s => s.delete(uid)).then(r => { onDbChange(); return r; }),
+    clear: () => tx('readwrite', s => s.clear()).then(r => { onDbChange(); return r; }),
+  };
+})();
+
+/* =====================================================================
+   Card data sources: Pokémon TCG API (primary) + TCGdex (fallback)
+   ===================================================================== */
+const VARIANT_LABELS = {
+  normal: 'רגיל',
+  holofoil: 'הולו (מבריק)',
+  reverseHolofoil: 'רוורס הולו',
+  '1stEditionHolofoil': 'מהדורה ראשונה – הולו',
+  '1stEditionNormal': 'מהדורה ראשונה',
+  unlimitedHolofoil: 'Unlimited – הולו',
+  unlimited: 'Unlimited',
+};
+const VARIANT_ORDER = ['holofoil', 'normal', 'reverseHolofoil', '1stEditionHolofoil', '1stEditionNormal', 'unlimitedHolofoil', 'unlimited'];
+const CONDITIONS = [
+  { id: 'NM', label: 'כמו חדש (NM)', f: 1 },
+  { id: 'LP', label: 'כמעט חדש (LP)', f: 0.85 },
+  { id: 'MP', label: 'משומש (MP)', f: 0.7 },
+  { id: 'HP', label: 'שחוק (HP)', f: 0.5 },
+  { id: 'DMG', label: 'פגום (DMG)', f: 0.3 },
+  // Graded slabs (PSA / CGC / BGS). The price sources only list raw cards, so this is a rough
+  // multiplier on the Near-Mint price, with a minimum that reflects the cost of grading.
+  { id: 'G10', label: 'מדורג 10', graded: 10, mult: 4, floorUSD: 30 },
+  { id: 'G9', label: 'מדורג 9', graded: 9, mult: 1.7, floorUSD: 18 },
+  { id: 'G8', label: 'מדורג 8', graded: 8, mult: 1.15, floorUSD: 12 },
+  { id: 'G7', label: 'מדורג 7', graded: 7, mult: 0.9, floorUSD: 9 },
+  { id: 'G6', label: 'מדורג 6 ומטה', graded: 6, mult: 0.7, floorUSD: 7 },
+];
+
+const PTCG = 'https://api.pokemontcg.io/v2/cards';
+const PTCG_SELECT = 'id,name,number,rarity,supertype,set,images,tcgplayer,cardmarket';
+
+function ptcgHeaders() {
+  const k = settings.get('ptcgKey');
+  return k ? { 'X-Api-Key': k } : {};
+}
+
+function normalizePtcg(c) {
+  const tcg = {};
+  const tp = c.tcgplayer && c.tcgplayer.prices;
+  if (tp) {
+    for (const [v, p] of Object.entries(tp)) {
+      if (!p || !(num(p.low) || num(p.mid) || num(p.market))) continue; // variant listed without any price
+      tcg[v] = { low: num(p.low), mid: num(p.mid), high: num(p.high), market: num(p.market) };
+    }
+  }
+  const cmp = c.cardmarket && c.cardmarket.prices;
+  const cm = cmp ? {
+    trend: num(cmp.trendPrice), avg30: num(cmp.avg30), avg7: num(cmp.avg7), low: num(cmp.lowPrice),
+    avg: num(cmp.averageSellPrice), reverseTrend: num(cmp.reverseHoloTrend), reverseLow: num(cmp.reverseHoloLow),
+  } : null;
+  return {
+    src: 'ptcg',
+    id: c.id,
+    name: c.name,
+    number: c.number,
+    rarity: c.rarity || '',
+    setName: (c.set && c.set.name) || '',
+    setSeries: (c.set && c.set.series) || '',
+    setId: (c.set && c.set.id) || '',
+    setTotal: (c.set && (c.set.printedTotal || c.set.total)) || null,
+    releaseDate: (c.set && c.set.releaseDate) || '',
+    img: c.images && c.images.small,
+    imgLarge: c.images && (c.images.large || c.images.small),
+    prices: {
+      tcg, cm,
+      tcgUrl: c.tcgplayer && c.tcgplayer.url,
+      cmUrl: c.cardmarket && c.cardmarket.url,
+      updated: (c.tcgplayer && c.tcgplayer.updatedAt) || (c.cardmarket && c.cardmarket.updatedAt) || '',
+    },
+  };
+}
+
+async function ptcgQuery(q, pageSize = 30) {
+  const url = `${PTCG}?q=${encodeURIComponent(q)}&pageSize=${pageSize}&orderBy=-set.releaseDate&select=${PTCG_SELECT}`;
+  const d = await fetchJSON(url, { headers: ptcgHeaders() }, 25000);
+  return (d.data || []).map(normalizePtcg);
+}
+async function ptcgGet(id) {
+  const d = await fetchJSON(`${PTCG}/${encodeURIComponent(id)}?select=${PTCG_SELECT}`, { headers: ptcgHeaders() }, 25000);
+  return normalizePtcg(d.data);
+}
+
+const TCGDEX = 'https://api.tcgdex.net/v2/en';
+const TCGDEX_VARIANT_MAP = { normal: 'normal', holofoil: 'holofoil', 'reverse-holofoil': 'reverseHolofoil', reverse: 'reverseHolofoil', '1st-edition-holofoil': '1stEditionHolofoil', '1st-edition': '1stEditionNormal' };
+
+function normalizeTcgdex(c) {
+  const tcg = {};
+  let cm = null, updated = '';
+  const pr = c.pricing || {};
+  if (pr.tcgplayer) {
+    updated = pr.tcgplayer.updated || '';
+    for (const [k, p] of Object.entries(pr.tcgplayer)) {
+      if (!p || typeof p !== 'object' || !(num(p.lowPrice) || num(p.midPrice) || num(p.marketPrice))) continue;
+      const v = TCGDEX_VARIANT_MAP[k] || k;
+      tcg[v] = { low: num(p.lowPrice), mid: num(p.midPrice), high: num(p.highPrice), market: num(p.marketPrice) };
+    }
+  }
+  if (pr.cardmarket) {
+    const p = pr.cardmarket;
+    updated = updated || p.updated || '';
+    cm = { trend: num(p.trend), avg30: num(p.avg30), avg7: num(p.avg7), low: num(p.low), avg: num(p.avg),
+      reverseTrend: num(p['trend-holo']), reverseLow: num(p['low-holo']) };
+  }
+  const img = c.image ? c.image + '/low.png' : '';
+  return {
+    src: 'tcgdex',
+    id: c.id,
+    name: c.name,
+    number: c.localId,
+    rarity: c.rarity || '',
+    setName: (c.set && c.set.name) || '',
+    setSeries: '',
+    setId: (c.set && c.set.id) || '',
+    setTotal: (c.set && c.set.cardCount && (c.set.cardCount.official || c.set.cardCount.total)) || null,
+    releaseDate: c.set && c.set.releaseDate || '',
+    img,
+    imgLarge: c.image ? c.image + '/high.png' : '',
+    prices: { tcg, cm, tcgUrl: null, cmUrl: null, updated },
+  };
+}
+async function tcgdexGet(id) {
+  return normalizeTcgdex(await fetchJSON(`${TCGDEX}/cards/${encodeURIComponent(id)}`, {}, 20000));
+}
+async function tcgdexSearch({ name, number, total }) {
+  let list = [];
+  if (name) {
+    list = await fetchJSON(`${TCGDEX}/cards?name=${encodeURIComponent(baseName(name) || name)}`, {}, 20000);
+  } else if (number) {
+    list = await fetchJSON(`${TCGDEX}/cards?localId=${encodeURIComponent(number)}`, {}, 20000);
+  }
+  if (!Array.isArray(list)) return [];
+  if (number) {
+    const n = stripZeros(number).toUpperCase();
+    const exact = list.filter(c => stripZeros(c.localId).toUpperCase() === n);
+    if (exact.length) list = exact;
+  }
+  const details = await Promise.all(list.slice(0, 12).map(c => tcgdexGet(c.id).catch(() => null)));
+  let out = details.filter(Boolean);
+  if (total) {
+    const t = parseInt(total, 10);
+    const sameTotal = out.filter(c => c.setTotal === t);
+    if (sameTotal.length) out = sameTotal.concat(out.filter(c => c.setTotal !== t));
+  }
+  return out;
+}
+
+async function refetchCard(card) {
+  if (card.src === 'tcgdex') return tcgdexGet(card.id);
+  let fresh;
+  try { fresh = await ptcgGet(card.id); }
+  catch (e) { fresh = { ...card, prices: { tcg: {}, cm: null, tcgUrl: card.prices && card.prices.tcgUrl, cmUrl: card.prices && card.prices.cmUrl } }; }
+  const enriched = await enrichPrices(fresh);
+  if (!hasPrices(enriched) && hasPrices(card)) return card; // keep the last known prices rather than losing them
+  return enriched;
+}
+
+/* TCGdex set list (cached) – used to find the exact same card by set + number. */
+let tcgdexSetsP = null;
+function tcgdexSets() {
+  if (!tcgdexSetsP) {
+    tcgdexSetsP = fetchJSON(`${TCGDEX}/sets`, {}, 20000);
+    tcgdexSetsP.catch(() => { tcgdexSetsP = null; });
+  }
+  return tcgdexSetsP;
+}
+async function tcgdexFindExact(card) {
+  const sets = await tcgdexSets();
+  const cands = (Array.isArray(sets) ? sets : [])
+    .map(st => ({ st, sim: nameSimilarity(st.name, card.setName), sameCount: card.setTotal && st.cardCount && st.cardCount.official === card.setTotal }))
+    .filter(x => x.sim > 0.85 || (x.sameCount && x.sim > 0.5))
+    .sort((a, b) => (b.sim + (b.sameCount ? 0.5 : 0)) - (a.sim + (a.sameCount ? 0.5 : 0)))
+    .slice(0, 3);
+  const raw = String(card.number || '');
+  const nums = [...new Set([raw, /^\d+$/.test(raw) ? raw.padStart(3, '0') : raw, stripZeros(raw)])];
+  for (const { st } of cands) {
+    for (const n of nums) {
+      try { return await tcgdexGet(`${st.id}-${n}`); } catch (e) { /* try next form */ }
+    }
+  }
+  return null;
+}
+
+const hasPrices = (card) => {
+  const p = card && card.prices;
+  if (!p) return false;
+  if (Object.values(p.tcg || {}).some(v => v && (v.market || v.mid || v.low))) return true;
+  return !!(p.cm && (p.cm.trend || p.cm.avg30 || p.cm.avg || p.cm.low));
+};
+
+/* pokemontcg.io sometimes returns a card without prices (its data is moving to a new service).
+   In that case look up the same card (same number + same set) in TCGdex and take its prices. */
+const priceCache = new Map();
+async function enrichPrices(card) {
+  if (!card || hasPrices(card) || card.src === 'tcgdex') return card;
+  if (priceCache.has(card.id)) return { ...card, prices: priceCache.get(card.id) };
+  try {
+    const exact = await tcgdexFindExact(card).catch(() => null);
+    const found = exact && hasPrices(exact) ? [exact] : await tcgdexSearch({ name: card.name, number: card.number, total: card.setTotal });
+    const n = stripZeros(card.number).toUpperCase();
+    const match = found.find(c => stripZeros(c.number).toUpperCase() === n && hasPrices(c) &&
+      ((card.setTotal && c.setTotal === card.setTotal) || nameSimilarity(c.setName, card.setName) > 0.8));
+    if (!match) return card;
+    const prices = { ...match.prices, tcgUrl: card.prices && card.prices.tcgUrl, cmUrl: card.prices && card.prices.cmUrl, via: 'TCGdex' };
+    priceCache.set(card.id, prices);
+    return { ...card, prices };
+  } catch (e) {
+    console.warn('price fallback failed', e);
+    return card;
+  }
+}
+
+/** Search both sources for a parsed card {name, number, total}. */
+async function searchCards(parsed) {
+  const found = new Map();
+  const add = (arr) => arr.forEach(c => { if (c && !found.has(c.id)) found.set(c.id, c); });
+  const name = (parsed.name || '').replace(/["\\]/g, '').trim();
+  const numRaw = (parsed.number || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const numStripped = stripZeros(numRaw);
+  const numQ = numRaw ? (numRaw !== numStripped ? `(number:${numStripped} OR number:${numRaw})` : `number:${numRaw}`) : '';
+  const totalQ = /^\d+$/.test(parsed.total || '') ? `set.printedTotal:${parseInt(parsed.total, 10)}` : '';
+  const term = (n) => /^[A-Za-z0-9é]+$/.test(n) ? `name:${n}*` : `name:"${n}"`;
+  const nameTerm = name ? term(name) : '';
+  const base = baseName(name);
+  const baseTerm = base && base !== name ? term(base) : '';
+
+  const queries = [];
+  if (numQ && totalQ) queries.push(`${numQ} ${totalQ}`);
+  if (nameTerm && numQ) queries.push(`${nameTerm} ${numQ}`);
+  if (nameTerm) queries.push(nameTerm);
+  if (baseTerm) queries.push(baseTerm);
+  if (!queries.length && numQ) queries.push(numQ);
+
+  let ptcgFailed = false;
+  for (const q of queries) {
+    try {
+      add(await ptcgQuery(q));
+    } catch (e) {
+      console.warn('ptcg failed', q, e);
+      ptcgFailed = true;
+      break;
+    }
+    if (found.size >= 40) break;
+  }
+  if (ptcgFailed || found.size === 0) {
+    try { add(await tcgdexSearch({ name, number: numRaw, total: parsed.total })); }
+    catch (e) { console.warn('tcgdex failed', e); if (ptcgFailed) throw new Error('search-offline'); }
+  }
+  return Array.from(found.values());
+}
+
+/** Parse free text like "Charizard 4/102" or "pikachu 25". */
+function parseQuery(text) {
+  let t = String(text || '').trim();
+  let number = '', total = '';
+  const m = t.match(/([A-Za-z]{0,4}\d{1,3}[a-z]?)\s*\/\s*([A-Za-z]{0,4}\d{1,3})/);
+  if (m) { number = m[1]; total = m[2].replace(/\D/g, '') === m[2] ? m[2] : ''; t = t.replace(m[0], ' '); }
+  else {
+    const m2 = t.match(/(?:^|\s)#?([A-Za-z]{0,4}\d{1,3})(?=\s|$)/);
+    if (m2) { number = m2[1]; t = t.replace(m2[0], ' '); }
+  }
+  return { name: t.replace(/\s+/g, ' ').trim(), number, total };
+}
+
+/* =====================================================================
+   Pricing / value estimate
+   ===================================================================== */
+function availableVariants(card) {
+  const vs = Object.keys((card.prices && card.prices.tcg) || {});
+  vs.sort((a, b) => (VARIANT_ORDER.indexOf(a) + 99 * (VARIANT_ORDER.indexOf(a) < 0)) - (VARIANT_ORDER.indexOf(b) + 99 * (VARIANT_ORDER.indexOf(b) < 0)));
+  return vs.length ? vs : ['normal'];
+}
+
+function estimate(card, variant, condition) {
+  const cond = CONDITIONS.find(c => c.id === condition) || CONDITIONS[0];
+  if (cond.graded) {
+    const raw = estimate(card, variant, 'NM');
+    if (raw.ils == null) return { ...raw, graded: cond.graded };
+    const ils = Math.max(raw.ils * cond.mult, cond.floorUSD * rates.USD);
+    return { ils, low: ils * 0.7, high: ils * 1.5, basis: [...raw.basis, 'הערכה גסה לקלף מדורג'], graded: cond.graded };
+  }
+  const f = cond.f;
+  const p = card.prices || {};
+  const tv = p.tcg && p.tcg[variant];
+  const isReverse = /reverse/i.test(variant || '');
+  const points = [], lows = [], highs = [];
+  if (tv) {
+    const usd = tv.market || tv.mid || tv.low;
+    if (usd) points.push({ src: 'TCGplayer', ils: usd * rates.USD });
+    if (tv.low) lows.push(tv.low * rates.USD);
+    if (tv.market || tv.mid) highs.push((tv.market || tv.mid) * rates.USD);
+  }
+  if (p.cm) {
+    const eur = isReverse ? (p.cm.reverseTrend || p.cm.trend) : (p.cm.trend || p.cm.avg30 || p.cm.avg);
+    if (eur) points.push({ src: 'Cardmarket', ils: eur * rates.EUR });
+    const low = isReverse ? (p.cm.reverseLow || p.cm.low) : p.cm.low;
+    if (low) lows.push(low * rates.EUR);
+    if (eur) highs.push(eur * rates.EUR);
+  }
+  if (!points.length) return { ils: null, low: null, high: null, basis: [] };
+  const avg = points.reduce((s, x) => s + x.ils, 0) / points.length;
+  const low = lows.length ? Math.min(...lows) : avg;
+  const high = highs.length ? Math.max(...highs) : avg;
+  return { ils: avg * f, low: Math.min(low, avg) * f, high: Math.max(high, avg) * f, basis: points.map(x => x.src) };
+}
+
+function bestVariant(card, hint) {
+  const vs = availableVariants(card);
+  if (hint && vs.includes(hint)) return hint;
+  return vs[0];
+}
+
+/* =====================================================================
+   Image processing: load, auto-detect card, perspective warp
+   ===================================================================== */
+const CARD_W = 600, CARD_H = 840; // 63 x 88 mm ratio
+
+function fileToCanvas(file, maxDim = 2000) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s);
+      c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+/** Order 4 points as [TL, TR, BR, BL] and make the card portrait. */
+function orderCorners(pts) {
+  const c = { x: pts.reduce((s, p) => s + p.x, 0) / 4, y: pts.reduce((s, p) => s + p.y, 0) / 4 };
+  const sorted = pts.slice().sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x));
+  // atan2 order starting from -PI: TL, TR, BR, BL (y axis points down)
+  let start = 0, best = Infinity;
+  sorted.forEach((p, i) => { const v = p.x + p.y; if (v < best) { best = v; start = i; } });
+  let q = [0, 1, 2, 3].map(i => sorted[(start + i) % 4]);
+  const w = (dist(q[0], q[1]) + dist(q[3], q[2])) / 2;
+  const h = (dist(q[0], q[3]) + dist(q[1], q[2])) / 2;
+  if (w > h) q = [q[3], q[0], q[1], q[2]]; // landscape card -> rotate so it becomes portrait
+  return q;
+}
+
+/** Solve homography mapping dst rect -> src quad (for inverse warping). */
+function homography(from, to) {
+  const A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const { x, y } = from[i], { x: u, y: v } = to[i];
+    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+  }
+  // Gaussian elimination
+  const n = 8;
+  for (let col = 0; col < n; col++) {
+    let piv = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    [A[col], A[piv]] = [A[piv], A[col]]; [b[col], b[piv]] = [b[piv], b[col]];
+    const d = A[col][col] || 1e-12;
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const f = A[r][col] / d;
+      if (!f) continue;
+      for (let k = col; k < n; k++) A[r][k] -= f * A[col][k];
+      b[r] -= f * b[col];
+    }
+  }
+  const h = b.map((v, i) => v / A[i][i]);
+  return [...h, 1];
+}
+
+function warpCard(srcCanvas, quad, W = CARD_W, H = CARD_H) {
+  const sctx = srcCanvas.getContext('2d');
+  const sw = srcCanvas.width, sh = srcCanvas.height;
+  const src = sctx.getImageData(0, 0, sw, sh).data;
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  const octx = out.getContext('2d');
+  const img = octx.createImageData(W, H);
+  const d = img.data;
+  const h = homography([{ x: 0, y: 0 }, { x: W - 1, y: 0 }, { x: W - 1, y: H - 1 }, { x: 0, y: H - 1 }], quad);
+  let o = 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const den = h[6] * x + h[7] * y + h[8];
+      const u = (h[0] * x + h[1] * y + h[2]) / den;
+      const v = (h[3] * x + h[4] * y + h[5]) / den;
+      const x0 = Math.floor(u), y0 = Math.floor(v);
+      if (x0 < 0 || y0 < 0 || x0 >= sw - 1 || y0 >= sh - 1) {
+        d[o] = d[o + 1] = d[o + 2] = 255; d[o + 3] = 255; o += 4; continue;
+      }
+      const fx = u - x0, fy = v - y0;
+      const i00 = (y0 * sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw * 4, i11 = i01 + 4;
+      for (let c = 0; c < 3; c++) {
+        const top = src[i00 + c] * (1 - fx) + src[i10 + c] * fx;
+        const bot = src[i01 + c] * (1 - fx) + src[i11 + c] * fx;
+        d[o + c] = top * (1 - fy) + bot * fy;
+      }
+      d[o + 3] = 255;
+      o += 4;
+    }
+  }
+  octx.putImageData(img, 0, 0);
+  return out;
+}
+
+/* ---- Automatic card edge detection (pure JS – nothing to download) ----
+   1. shrink the photo and find strong colour edges (Sobel on R, G, B);
+   2. scanning in from each side, collect edge points whose direction matches that side;
+   3. fit one straight line per side (RANSAC – the line that covers the most scan lines wins,
+      so wavy background texture loses to the card's straight border);
+   4. the 4 line intersections are the card corners. */
+function detectCardQuad(canvas) {
+  const scale = Math.min(1, 320 / Math.max(canvas.width, canvas.height));
+  const W = Math.max(8, Math.round(canvas.width * scale)), H = Math.max(8, Math.round(canvas.height * scale));
+  const sc = document.createElement('canvas');
+  sc.width = W; sc.height = H;
+  const sctx = sc.getContext('2d');
+  sctx.filter = 'blur(1px)';
+  sctx.drawImage(canvas, 0, 0, W, H);
+  const px = sctx.getImageData(0, 0, W, H).data;
+
+  const mag = new Float32Array(W * H), gxs = new Float32Array(W * H), gys = new Float32Array(W * H);
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      let best = 0, bx = 0, by = 0;
+      for (let c = 0; c < 3; c++) {
+        const p = (yy, xx) => px[(yy * W + xx) * 4 + c];
+        const gx = p(y - 1, x + 1) + 2 * p(y, x + 1) + p(y + 1, x + 1) - p(y - 1, x - 1) - 2 * p(y, x - 1) - p(y + 1, x - 1);
+        const gy = p(y + 1, x - 1) + 2 * p(y + 1, x) + p(y + 1, x + 1) - p(y - 1, x - 1) - 2 * p(y - 1, x) - p(y - 1, x + 1);
+        const m = gx * gx + gy * gy;
+        if (m > best) { best = m; bx = gx; by = gy; }
+      }
+      const i = y * W + x;
+      mag[i] = Math.sqrt(best); gxs[i] = bx; gys[i] = by;
+    }
+  }
+  const sorted = Array.from(mag).filter(v => v > 0).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const thr = Math.max(40, sorted[Math.floor(sorted.length * 0.8)]);
+
+  // Collect candidate edge points for one side. horiz = top/bottom border (edge runs along x).
+  const collect = (horiz, fromStart) => {
+    const pts = [];
+    const along = horiz ? W : H, across = horiz ? H : W;
+    for (let a = Math.floor(along * 0.04); a < along * 0.96; a++) {
+      const lim = Math.floor(across * 0.6);
+      for (let k = 1; k < lim; k++) {
+        const b = fromStart ? k : across - 1 - k;
+        const x = horiz ? a : b, y = horiz ? b : a;
+        const i = y * W + x;
+        const m = mag[i];
+        if (m < thr) continue;
+        const g1 = Math.abs(horiz ? gys[i] : gxs[i]), g2 = Math.abs(horiz ? gxs[i] : gys[i]);
+        if (g1 < g2 * 1.2) continue; // edge direction must match this side
+        const prev = horiz ? mag[i - W] : mag[i - 1], next = horiz ? mag[i + W] : mag[i + 1];
+        if (m >= prev && m >= next) pts.push({ x, y, a });
+      }
+    }
+    return pts;
+  };
+
+  // Hough transform: candidate straight lines for one side (votes = edge points on the line).
+  const fitLines = (pts, horiz) => {
+    if (pts.length < 10) return [];
+    const span = horiz ? W : H, diag = Math.ceil(Math.hypot(W, H));
+    const angles = [];
+    for (let d = -35; d <= 35; d++) angles.push(d * Math.PI / 180);
+    // line normal for a top/bottom edge points roughly along y, for left/right along x
+    const normals = angles.map(t => horiz ? { nx: -Math.sin(t), ny: Math.cos(t) } : { nx: Math.cos(t), ny: Math.sin(t) });
+    const R = 2 * diag + 1;
+    const votes = new Int32Array(angles.length * R);
+    for (const p of pts) {
+      for (let k = 0; k < normals.length; k++) {
+        const rho = Math.round(normals[k].nx * p.x + normals[k].ny * p.y) + diag;
+        votes[k * R + rho]++;
+      }
+    }
+    const cands = [];
+    for (let i = 0; i < votes.length; i++) if (votes[i] >= span * 0.12) cands.push(i);
+    cands.sort((x, y) => votes[y] - votes[x]);
+    const out = [];
+    for (const i of cands) {
+      const k = Math.floor(i / R), rho = (i % R) - diag;
+      if (out.some(o => Math.abs(o.k - k) <= 3 && Math.abs(o.rho - rho) <= 5)) continue;
+      out.push({ k, rho });
+      if (out.length >= 10) break;
+    }
+    return out.map(({ k, rho }) => {
+      let { nx, ny } = normals[k], c = -rho;
+      // refine with least squares on the points close to the line
+      const inl = pts.filter(r => Math.abs(nx * r.x + ny * r.y + c) < 2);
+      if (inl.length >= 5) {
+        const n = inl.length;
+        const mx = inl.reduce((sum, r) => sum + r.x, 0) / n, my = inl.reduce((sum, r) => sum + r.y, 0) / n;
+        let sxx = 0, syy = 0, sxy = 0;
+        for (const r of inl) { sxx += (r.x - mx) ** 2; syy += (r.y - my) ** 2; sxy += (r.x - mx) * (r.y - my); }
+        const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+        nx = -Math.sin(ang); ny = Math.cos(ang); c = -(nx * mx + ny * my);
+      }
+      return { nx, ny, c };
+    });
+  };
+
+  const cross = (l1, l2) => {
+    const det = l1.nx * l2.ny - l2.nx * l1.ny;
+    if (Math.abs(det) < 1e-6) return null;
+    return { x: (l1.ny * l2.c - l2.ny * l1.c) / det, y: (l2.nx * l1.c - l1.nx * l2.c) / det };
+  };
+  // How much of the segment a->b really lies on a strong edge (0..1).
+  const support = (a, b) => {
+    const N = 60, len = dist(a, b) || 1;
+    const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+    let hit = 0;
+    for (let k = 0; k < N; k++) {
+      const t = (k + 0.5) / N;
+      const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+      for (const o of [0, -1, 1, -2, 2]) {
+        const xi = Math.round(x + nx * o), yi = Math.round(y + ny * o);
+        if (xi > 0 && yi > 0 && xi < W - 1 && yi < H - 1 && mag[yi * W + xi] >= thr * 0.6) { hit++; break; }
+      }
+    }
+    return hit / N;
+  };
+
+  const T = fitLines(collect(true, true), true), B = fitLines(collect(true, false), true);
+  const Lf = fitLines(collect(false, true), false), R = fitLines(collect(false, false), false);
+  let best = null;
+  for (const t of T) for (const bt of B) for (const l of Lf) for (const r of R) {
+    const pts = [cross(t, l), cross(t, r), cross(bt, r), cross(bt, l)];
+    if (pts.some(p => !p || p.x < -W * 0.05 || p.y < -H * 0.05 || p.x > W * 1.05 || p.y > H * 1.05)) continue;
+    const w = (dist(pts[0], pts[1]) + dist(pts[3], pts[2])) / 2, h = (dist(pts[0], pts[3]) + dist(pts[1], pts[2])) / 2;
+    if (w * h < W * H * 0.1) continue;
+    const ratio = Math.min(w, h) / Math.max(w, h);
+    if (ratio < 0.55 || ratio > 0.9) continue;
+    const sup = [support(pts[0], pts[1]), support(pts[1], pts[2]), support(pts[2], pts[3]), support(pts[3], pts[0])];
+    if (Math.min(...sup) < 0.45) continue;
+    const shape = 1 - Math.min(1, Math.abs(ratio - 63 / 88) * 4);  // card is 63 x 88 mm
+    const score = sup.reduce((s2, v) => s2 + v, 0) + shape + 0.3 * (w * h) / (W * H);
+    if (!best || score > best.score) best = { score, pts };
+  }
+  if (!best) return null;
+  const q = orderCorners(best.pts);
+  return q.map(p => ({
+    x: Math.max(0, Math.min(canvas.width - 1, p.x / scale)),
+    y: Math.max(0, Math.min(canvas.height - 1, p.y / scale)),
+  }));
+}
+
+/* =====================================================================
+   Card recognition: OCR (Tesseract.js) or Claude vision
+   ===================================================================== */
+let ocrWorkerP = null;
+let ocrProgressEl = null;
+function ocrProgress(m) {
+  if (!ocrProgressEl || !m || typeof m.progress !== 'number') return;
+  if (/loading|initializ/i.test(m.status || '')) ocrProgressEl.textContent = `מוריד את קורא הטקסט... ${Math.round(m.progress * 100)}%`;
+}
+function resetOcrWorker() {
+  const p = ocrWorkerP;
+  ocrWorkerP = null;
+  if (p) p.then(w => w.terminate()).catch(() => {});
+}
+function getOcrWorker() {
+  if (ocrWorkerP) return ocrWorkerP;
+  const creating = (async () => {
+    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 40000);
+    return await window.Tesseract.createWorker('eng', 1, { logger: (m) => ocrProgress(m) });
+  })();
+  ocrWorkerP = Promise.race([
+    creating,
+    sleep(40000).then(() => {
+      creating.then(w => w.terminate()).catch(() => {}); // don't leave a half-loaded worker behind
+      throw new Error('OCR load timeout');
+    }),
+  ]);
+  ocrWorkerP.catch(() => { ocrWorkerP = null; });
+  return ocrWorkerP;
+}
+
+function cropRegion(canvas, x0, y0, x1, y1, scale = 2) {
+  const W = canvas.width, H = canvas.height;
+  const sx = Math.round(W * x0), sy = Math.round(H * y0);
+  const sw = Math.round(W * (x1 - x0)), sh = Math.round(H * (y1 - y0));
+  const c = document.createElement('canvas');
+  c.width = sw * scale; c.height = sh * scale;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  // grayscale + contrast stretch
+  const img = ctx.getImageData(0, 0, c.width, c.height), d = img.data;
+  let mn = 255, mx = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    d[i] = g; if (g < mn) mn = g; if (g > mx) mx = g;
+  }
+  const r = Math.max(1, mx - mn);
+  for (let i = 0; i < d.length; i += 4) { const g = (d[i] - mn) * 255 / r; d[i] = d[i + 1] = d[i + 2] = g; }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
+const NAME_STOP = new Set(['basic', 'stage', 'stage1', 'stage2', 'hp', 'evolves', 'from', 'put', 'on', 'the', 'trainer', 'item',
+  'supporter', 'pokemon', 'pokémon', 'tool', 'stadium', 'energy', 'special', 'mega', 'restored', 'baby', 'level', 'lv', 'tera']);
+
+function parseNameText(text) {
+  const lines = String(text || '').split(/\n/).map(l => l.trim()).filter(Boolean);
+  let bestName = '';
+  for (const line of lines) {
+    const words = line.replace(/[^A-Za-zÀ-ÿ'’.\-\s]/g, ' ').split(/\s+/)
+      .filter(w => w.length >= 2 && !NAME_STOP.has(w.toLowerCase().replace(/[^a-zé]/g, '')));
+    const suffix = [];
+    const main = [];
+    for (const w of words) {
+      if (/^(ex|EX|GX|V|VMAX|VSTAR)$/.test(w)) suffix.push(w);
+      else if (w.length >= 3 && /[a-z]/.test(w)) main.push(w);
+    }
+    if (main.length) {
+      const cand = main.slice(0, 2).join(' ') + (suffix.length ? ' ' + suffix[0] : '');
+      if (cand.length > bestName.length) bestName = cand;
+    }
+  }
+  return bestName.trim();
+}
+
+function parseNumberText(text) {
+  const t = String(text || '')
+    .replace(/[oO](?=\d)/g, '0').replace(/(\d)[oO]/g, (m, d) => d + '0')
+    .replace(/[lI|](?=\d)/g, '1').replace(/(\d)[lI|]/g, (m, d) => d + '1');
+  const m = t.match(/\b([A-Z]{0,4}\d{1,3})\s*[\/⁄]\s*([A-Z]{0,4}\d{2,3})\b/);
+  if (m) return { number: m[1], total: /^\d+$/.test(m[2]) ? m[2] : '' };
+  const promo = t.match(/\b((?:SWSH|SM|XY|BW|SVP|SV|HGSS|DP|TG|GG)\s?\d{1,3})\b/);
+  if (promo) return { number: promo[1].replace(/\s/g, ''), total: '' };
+  return { number: '', total: '' };
+}
+
+async function ocrCard(cardCanvas, onProgress) {
+  const worker = await getOcrWorker();
+  onProgress && onProgress('reading');
+  await worker.setParameters({ tessedit_pageseg_mode: '7' });
+  const nameRes = await worker.recognize(cropRegion(cardCanvas, 0.04, 0.02, 0.74, 0.105, 2));
+  let name = parseNameText(nameRes.data.text);
+  if (!name) {
+    // Older cards / trainer cards: name sits slightly lower
+    const alt = await worker.recognize(cropRegion(cardCanvas, 0.04, 0.06, 0.8, 0.15, 2));
+    name = parseNameText(alt.data.text);
+  }
+  await worker.setParameters({ tessedit_pageseg_mode: '11' });
+  const botRes = await worker.recognize(cropRegion(cardCanvas, 0, 0.87, 1, 0.985, 2.5));
+  let { number, total } = parseNumberText(botRes.data.text);
+  if (!number) {
+    const midRes = await worker.recognize(cropRegion(cardCanvas, 0, 0.82, 1, 0.93, 2.5));
+    ({ number, total } = parseNumberText(midRes.data.text));
+  }
+  return { name, number, total, raw: nameRes.data.text + ' | ' + botRes.data.text };
+}
+
+/* ---- Claude vision (optional, needs the user's own API key) ---- */
+const CARD_SCHEMA = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', description: 'English card name as on the card, e.g. "Charizard ex"' },
+    number: { type: ['string', 'null'], description: 'Collector number before the slash as printed, e.g. "025" or "TG05"' },
+    total: { type: ['string', 'null'], description: 'Number after the slash, e.g. "165"' },
+    set_name: { type: ['string', 'null'] },
+    language: { type: 'string' },
+    finish: { type: 'string', enum: ['normal', 'holofoil', 'reverseHolofoil', 'unknown'] },
+    confidence: { type: 'number' },
+  },
+  required: ['name', 'number', 'total', 'set_name', 'language', 'finish', 'confidence'],
+  additionalProperties: false,
+};
+
+async function aiIdentify(cardCanvas) {
+  const apiKey = settings.get('anthropicKey');
+  if (!apiKey) return null;
+  const { default: Anthropic } = await import('https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.57.0/+esm');
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const data = cardCanvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+  const response = await client.beta.messages.create({
+    model: 'claude-opus-5-5',
+    max_tokens: 4000,
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default',
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: CARD_SCHEMA } },
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } },
+        { type: 'text', text: 'This is a photo of a single Pokémon Trading Card Game card. Identify it so it can be looked up in the Pokémon TCG database. Give the English card name even if the card is printed in another language. Read the collector number at the bottom of the card (e.g. "025/165"). If the card surface is shiny across the whole card it is "holofoil"; if only the area outside the artwork is shiny it is "reverseHolofoil".' },
+      ],
+    }],
+  });
+  if (response.stop_reason === 'refusal') throw new Error('refusal');
+  const textBlock = (response.content || []).find(b => b.type === 'text');
+  if (!textBlock) throw new Error('no answer');
+  const r = JSON.parse(textBlock.text);
+  return { name: r.name || '', number: r.number || '', total: r.total || '', setName: r.set_name || '', finish: r.finish, confidence: r.confidence };
+}
+
+/* ---- Visual similarity between my photo and candidate images ---- */
+function artSignature(source) {
+  const c = document.createElement('canvas');
+  c.width = 24; c.height = 20;
+  const ctx = c.getContext('2d');
+  const W = source.naturalWidth || source.width, H = source.naturalHeight || source.height;
+  ctx.drawImage(source, W * 0.08, H * 0.1, W * 0.84, H * 0.4, 0, 0, 24, 20);
+  const d = ctx.getImageData(0, 0, 24, 20).data; // throws if the image is cross-origin tainted
+  const ch = [[], [], []];
+  for (let i = 0; i < d.length; i += 4) { ch[0].push(d[i]); ch[1].push(d[i + 1]); ch[2].push(d[i + 2]); }
+  return ch.map(arr => {
+    const m = arr.reduce((s, v) => s + v, 0) / arr.length;
+    const sd = Math.sqrt(arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length) || 1;
+    return arr.map(v => (v - m) / sd);
+  });
+}
+function sigSimilarity(a, b) {
+  let tot = 0;
+  for (let c = 0; c < 3; c++) {
+    let s = 0;
+    for (let i = 0; i < a[c].length; i++) s += a[c][i] * b[c][i];
+    tot += s / a[c].length;
+  }
+  return tot / 3;
+}
+function loadCorsImage(url, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const t = setTimeout(() => resolve(null), timeoutMs);
+    img.onload = () => { clearTimeout(t); resolve(img); };
+    img.onerror = () => { clearTimeout(t); resolve(null); };
+    img.src = url;
+  });
+}
+
+async function rankCandidates(cands, parsed, cardCanvas) {
+  const n = stripZeros(parsed.number || '').toUpperCase();
+  const t = parseInt(parsed.total, 10);
+  let mySig = null;
+  try { if (cardCanvas) mySig = artSignature(cardCanvas); } catch (e) {}
+  const scored = cands.map(c => {
+    let s = 0;
+    if (parsed.name) s += 3 * nameSimilarity(parsed.name, c.name);
+    if (n && stripZeros(c.number).toUpperCase() === n) s += 3;
+    if (t && c.setTotal === t) s += 2;
+    if (parsed.setName && c.setName && nameSimilarity(parsed.setName, c.setName) > 0.8) s += 1.5;
+    return { card: c, score: s };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  if (mySig) {
+    // Compare artwork only for the top candidates (keeps network use small)
+    // at most ~3 seconds, so a slow connection never holds up the list
+    const top = scored.slice(0, 10);
+    await Promise.race([
+      Promise.all(top.map(async (x) => {
+        if (!x.card.img) return;
+        const img = await loadCorsImage(x.card.img, 3000);
+        if (!img) return;
+        try { x.img = sigSimilarity(mySig, artSignature(img)); x.score += 4 * Math.max(0, x.img); } catch (e) { /* CORS-tainted */ }
+      })),
+      sleep(3000),
+    ]);
+    scored.sort((a, b) => b.score - a.score);
+  }
+  return scored;
+}
+
+/* =====================================================================
+   Navigation
+   ===================================================================== */
+let currentView = 'collection';
+let captureMode = 'add'; // 'add' | 'value' | 'trade'
+let tradeSide = 'get';    // which trade side a scanned card goes to
+
+function go(view) {
+  if (view === 'add' || view === 'value') {
+    captureMode = view;
+    showView('capture');
+    $('#capTitle').textContent = view === 'add' ? '➕ הוספת קלף לאוסף' : '💰 כמה הקלף שווה?';
+    $('#capSub').textContent = view === 'add'
+      ? 'צלם את הקלף – אני אסדר את התמונה, אזהה את הקלף ואוסיף אותו לאוסף שלך.'
+      : 'צלם קלף ואני אגיד לך בערך כמה הוא שווה לפי מחירי השוק.';
+    startCaptureFlow();
+  } else {
+    showView(view);
+    if (view === 'collection') renderCollection();
+    if (view === 'settings') renderSettings();
+    if (view === 'trade') renderTrade();
+  }
+  $$('.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.go === view));
+}
+
+/** Open the scanner to add a card to one side of the trade. */
+function goTradeScan(side, manualQuery) {
+  captureMode = 'trade';
+  tradeSide = side;
+  showView('capture');
+  $('#capTitle').textContent = side === 'get' ? '🤝 סריקת קלף של החבר' : '🤝 סריקת קלף שאני נותן';
+  $('#capSub').textContent = 'צלם את הקלף, בחר את הקלף הנכון והוא ייכנס לטרייד.';
+  $$('.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.go === 'trade'));
+  startCaptureFlow();
+  if (manualQuery) {
+    $('#manualQuery').value = '';
+    $('#manualQuery').focus();
+  }
+}
+
+function showView(name) {
+  resultSeq++;
+  if (currentView === 'capture' && name !== 'capture') stopCamera();
+  currentView = name;
+  ['collection', 'capture', 'trade', 'settings'].forEach(v => { $('#view-' + v).hidden = v !== name; });
+  window.scrollTo(0, 0);
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-go]');
+  if (b) go(b.dataset.go);
+});
+
+/* =====================================================================
+   Capture flow
+   ===================================================================== */
+const cap = {
+  stream: null,
+  srcCanvas: null,   // the photo (possibly cropped around the guide)
+  quad: null,        // 4 corners in srcCanvas coords
+  cardCanvas: null,  // straightened card
+  parsed: null,
+  aiFinish: null,
+  selected: null,    // chosen card
+};
+
+function showStep(id) {
+  ['stepCamera', 'stepAdjust', 'stepIdentify', 'stepResult'].forEach(s => { $('#' + s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+
+async function startCaptureFlow() {
+  resultSeq++;
+  if (!settings.get('anthropicKey')) setTimeout(() => getOcrWorker().catch(() => {}), 1500);
+  cap.srcCanvas = cap.quad = cap.cardCanvas = cap.parsed = cap.selected = cap.aiFinish = null;
+  showStep('stepCamera');
+  await startCamera();
+}
+
+async function startCamera() {
+  const video = $('#camVideo'), msg = $('#camMsg');
+  msg.hidden = true;
+  if (cap.stream) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    msg.hidden = false;
+    msg.textContent = 'המצלמה החיה לא זמינה בדפדפן הזה. לחץ על 📸 כדי לצלם, או על 🖼️ כדי לבחור תמונה.';
+    return;
+  }
+  try {
+    cap.stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
+      audio: false,
+    });
+    if (currentView !== 'capture' || $('#stepCamera').hidden) { stopCamera(); return; }
+    video.srcObject = cap.stream;
+    await video.play().catch(() => {});
+  } catch (e) {
+    console.warn('camera', e);
+    msg.hidden = false;
+    msg.textContent = 'אין גישה למצלמה. אפשר ללחוץ על 📸 כדי לצלם, או על 🖼️ כדי לבחור תמונה מהגלריה.';
+  }
+}
+
+function stopCamera() {
+  if (cap.stream) {
+    cap.stream.getTracks().forEach(t => t.stop());
+    cap.stream = null;
+  }
+  $('#camVideo').srcObject = null;
+}
+
+$('#btnShutter').addEventListener('click', () => {
+  const video = $('#camVideo');
+  if (!cap.stream || !video.videoWidth) {
+    $('#fileCamera').click();
+    return;
+  }
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const vr = video.getBoundingClientRect(), gr = $('#camGuide').getBoundingClientRect();
+  // object-fit: cover mapping from screen to video pixels
+  const s = Math.max(vr.width / vw, vr.height / vh);
+  const offX = (vr.width - vw * s) / 2, offY = (vr.height - vh * s) / 2;
+  const toV = (x, y) => ({ x: (x - vr.left - offX) / s, y: (y - vr.top - offY) / s });
+  const g0 = toV(gr.left, gr.top), g1 = toV(gr.right, gr.bottom);
+  const gw = g1.x - g0.x, gh = g1.y - g0.y;
+  const mx = gw * 0.18, my = gh * 0.12;
+  const cx0 = Math.max(0, g0.x - mx), cy0 = Math.max(0, g0.y - my);
+  const cx1 = Math.min(vw, g1.x + mx), cy1 = Math.min(vh, g1.y + my);
+  const c = document.createElement('canvas');
+  c.width = Math.round(cx1 - cx0); c.height = Math.round(cy1 - cy0);
+  c.getContext('2d').drawImage(video, cx0, cy0, c.width, c.height, 0, 0, c.width, c.height);
+  const guideQuad = [
+    { x: g0.x - cx0, y: g0.y - cy0 }, { x: g1.x - cx0, y: g0.y - cy0 },
+    { x: g1.x - cx0, y: g1.y - cy0 }, { x: g0.x - cx0, y: g1.y - cy0 },
+  ];
+  stopCamera();
+  beginAdjust(c, guideQuad);
+});
+
+async function onFilePicked(e) {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const c = await fileToCanvas(f);
+    stopCamera();
+    const mx = c.width * 0.1, my = c.height * 0.1;
+    beginAdjust(c, [{ x: mx, y: my }, { x: c.width - mx, y: my }, { x: c.width - mx, y: c.height - my }, { x: mx, y: c.height - my }]);
+  } catch (err) {
+    toast('לא הצלחתי לפתוח את התמונה');
+  }
+}
+$('#fileGallery').addEventListener('change', onFilePicked);
+$('#fileCamera').addEventListener('change', onFilePicked);
+
+$('#manualForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = $('#manualQuery').value.trim();
+  if (!q) return;
+  stopCamera();
+  cap.cardCanvas = null;
+  showStep('stepIdentify');
+  setupIdentifyHeader();
+  $('#identQuery').value = q;
+  runSearch(parseQuery(q));
+});
+
+/* ---- Adjust corners ---- */
+function beginAdjust(canvas, initialQuad) {
+  cap.srcCanvas = canvas;
+  cap.quad = initialQuad.map(p => ({ ...p }));
+  showStep('stepAdjust');
+  const img = $('#adjustImg');
+  if (img.dataset.url) { URL.revokeObjectURL(img.dataset.url); img.dataset.url = ''; }
+  canvas.toBlob((b) => {
+    if (!b || cap.srcCanvas !== canvas) return;
+    img.dataset.url = URL.createObjectURL(b);
+    img.src = img.dataset.url;
+  }, 'image/jpeg', 0.85);
+  const svg = $('#adjustSvg');
+  svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  drawQuad();
+  const note = $('#detectNote');
+  note.innerHTML = '<span style="display:inline-flex;gap:6px;align-items:center"><span class="spinner"></span> מחפש את הקצוות של הקלף...</span>';
+  const token = cap.srcCanvas;
+  cap.userMoved = false;
+  // let the screen paint first, then detect (fast, runs locally)
+  setTimeout(() => {
+    if (cap.srcCanvas !== token) return;
+    let q = null;
+    try { q = detectCardQuad(canvas); } catch (e) { console.warn('detect', e); }
+    if (cap.userMoved) { note.textContent = ''; return; }
+    if (q) { cap.quad = q; drawQuad(); note.textContent = '✨ מצאתי את הקלף! אפשר לתקן את הנקודות אם צריך.'; }
+    else note.textContent = 'גרור את 4 הנקודות לפינות הקלף ולחץ "המשך".';
+  }, 50);
+}
+
+function drawQuad() {
+  const svg = $('#adjustSvg');
+  const W = cap.srcCanvas.width;
+  const r = Math.max(14, W * 0.035);
+  const sw = Math.max(3, W * 0.006);
+  const q = cap.quad;
+  const pts = q.map(p => `${p.x},${p.y}`).join(' ');
+  svg.innerHTML = `
+    <polygon points="${pts}" fill="rgba(255,203,5,0.15)" stroke="#ffcb05" stroke-width="${sw}"/>
+    <line x1="${q[0].x}" y1="${q[0].y}" x2="${q[1].x}" y2="${q[1].y}" stroke="#ffcb05" stroke-width="${sw * 3}" stroke-linecap="round"/>
+    ${q.map((p, i) => `<circle data-i="${i}" cx="${p.x}" cy="${p.y}" r="${r}" fill="rgba(227,53,13,0.85)" stroke="#fff" stroke-width="${sw}" style="cursor:grab"/>`).join('')}`;
+}
+
+(function setupDrag() {
+  const svg = $('#adjustSvg');
+  let drag = -1, raf = 0;
+  const toImg = (e) => {
+    const r = svg.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(cap.srcCanvas.width, (e.clientX - r.left) / r.width * cap.srcCanvas.width)),
+      y: Math.max(0, Math.min(cap.srcCanvas.height, (e.clientY - r.top) / r.height * cap.srcCanvas.height)),
+    };
+  };
+  svg.addEventListener('pointerdown', (e) => {
+    if (!cap.srcCanvas) return;
+    const p = toImg(e);
+    // pick the nearest corner (generous touch target)
+    let best = -1, bd = Infinity;
+    cap.quad.forEach((c, i) => { const d = dist(c, p); if (d < bd) { bd = d; best = i; } });
+    const r = svg.getBoundingClientRect();
+    if (bd / cap.srcCanvas.width * r.width > 60) return;
+    drag = best;
+    cap.userMoved = true;
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (drag < 0) return;
+    cap.quad[drag] = toImg(e);
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawQuad(); });
+  });
+  const end = () => { drag = -1; };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+})();
+
+$('#btnRotate').addEventListener('click', () => {
+  const q = cap.quad;
+  cap.quad = [q[3], q[0], q[1], q[2]];
+  drawQuad();
+});
+$('#btnRetake').addEventListener('click', () => startCaptureFlow());
+$('#btnAdjustOk').addEventListener('click', () => {
+  // keep the user's orientation (top edge = q[0]->q[1]) but make sure the points are not crossed
+  cap.cardCanvas = warpCard(cap.srcCanvas, cap.quad);
+  bumpStat('scans');
+  showStep('stepIdentify');
+  setupIdentifyHeader();
+  identify();
+});
+
+/* ---- Identify ---- */
+function setupIdentifyHeader() {
+  const c = $('#identCanvas');
+  if (cap.cardCanvas) {
+    c.hidden = false;
+    c.width = cap.cardCanvas.width; c.height = cap.cardCanvas.height;
+    c.getContext('2d').drawImage(cap.cardCanvas, 0, 0);
+  } else {
+    c.hidden = true;
+  }
+  $('#identStatus').innerHTML = '';
+  $('#candGrid').innerHTML = '';
+  $('#candNote').textContent = '';
+  $('#candTitle').textContent = 'איזה קלף זה?';
+}
+
+function status(text, state = 'busy') {
+  const li = document.createElement('li');
+  li.innerHTML = (state === 'busy' ? '<span class="spinner"></span>' : state === 'ok' ? '<span class="ok">✔</span>' : '<span class="err">✖</span>') + '<span></span>';
+  li.lastChild.textContent = text;
+  $('#identStatus').appendChild(li);
+  return {
+    done(t, ok = true) {
+      li.firstChild.outerHTML = ok ? '<span class="ok">✔</span>' : '<span class="err">✖</span>';
+      if (t) li.lastChild.textContent = t;
+    },
+  };
+}
+
+async function identify() {
+  const token = cap.cardCanvas;
+  cap.manualSearch = false;
+  let parsed = null;
+  if (settings.get('anthropicKey')) {
+    const st = status('מזהה את הקלף עם בינה מלאכותית...');
+    try {
+      parsed = await aiIdentify(cap.cardCanvas);
+      cap.aiFinish = parsed && parsed.finish;
+      st.done(`זיהיתי: ${parsed.name}${parsed.number ? ' #' + parsed.number : ''}${parsed.total ? '/' + parsed.total : ''}`);
+    } catch (e) {
+      console.warn('AI identify failed', e);
+      st.done('הזיהוי החכם לא הצליח, עובר לקריאת טקסט', false);
+    }
+  }
+  if (cap.cardCanvas !== token) return;
+  if (!parsed || (!parsed.name && !parsed.number)) {
+    const st = status('קורא את הטקסט על הקלף (בפעם הראשונה זה לוקח קצת זמן)...');
+    ocrProgressEl = $('#identStatus li:last-child span:last-child');
+    $('#candTitle').textContent = 'לא רוצה לחכות? כתוב את שם הקלף (באנגלית) ולחץ חפש ⬇️';
+    try {
+      parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(50000).then(() => { resetOcrWorker(); throw new Error('OCR timeout'); })]);
+      const bits = [parsed.name, parsed.number && ('#' + parsed.number + (parsed.total ? '/' + parsed.total : ''))].filter(Boolean).join(' ');
+      st.done(bits ? `קראתי: ${bits}` : 'לא הצלחתי לקרוא את השם – אפשר להקליד למטה', !!bits);
+    } catch (e) {
+      console.warn('OCR failed', e);
+      st.done('קריאת הטקסט לא זמינה כרגע – הקלד את שם הקלף למטה', false);
+      parsed = { name: '', number: '', total: '' };
+    }
+    ocrProgressEl = null;
+  }
+  if (cap.cardCanvas !== token || cap.manualSearch) return;
+  $('#identQuery').value = [parsed.name, parsed.number ? parsed.number + (parsed.total ? '/' + parsed.total : '') : ''].filter(Boolean).join(' ');
+  if (parsed.name || parsed.number) await runSearch(parsed);
+  else $('#identQuery').focus();
+}
+
+$('#identSearchForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = $('#identQuery').value.trim();
+  if (q) { cap.manualSearch = true; runSearch(parseQuery(q)); }
+});
+$('#btnIdentBack').addEventListener('click', () => startCaptureFlow());
+
+let searchSeq = 0;
+async function runSearch(parsed) {
+  const seq = ++searchSeq;
+  cap.parsed = parsed;
+  const grid = $('#candGrid');
+  grid.innerHTML = '<div class="row muted" style="grid-column:1/-1"><span class="spinner"></span> מחפש במאגר הקלפים...</div>';
+  $('#candNote').textContent = '';
+  let cands;
+  try {
+    cands = await searchCards(parsed);
+  } catch (e) {
+    if (seq !== searchSeq) return;
+    grid.innerHTML = '<p class="muted" style="grid-column:1/-1">⚠️ אין חיבור למאגר הקלפים כרגע. בדוק את האינטרנט ונסה שוב.</p>';
+    return;
+  }
+  if (seq !== searchSeq) return;
+  if (!cands.length) {
+    grid.innerHTML = '<p class="muted" style="grid-column:1/-1">לא מצאתי קלפים כאלה 🤔 נסה לכתוב רק את שם הפוקימון באנגלית (למשל Pikachu).</p>';
+    return;
+  }
+  grid.innerHTML = '<div class="row muted" style="grid-column:1/-1"><span class="spinner"></span> משווה לתמונה שלך...</div>';
+  const ranked = await rankCandidates(cands, parsed, cap.cardCanvas);
+  if (seq !== searchSeq) return;
+  const shown = ranked.slice(0, 24);
+  $('#candTitle').textContent = 'בחר את הקלף שלך:';
+  grid.innerHTML = shown.map((x, i) => `
+    <div class="cand ${i === 0 ? 'best' : ''}" data-i="${i}">
+      ${i === 0 ? '<span class="badge">הכי מתאים</span>' : ''}
+      <img src="${esc(x.card.img || '')}" alt="${esc(x.card.name)}" crossorigin="anonymous" loading="lazy">
+      <div class="cap"><b>${esc(x.card.name)}</b>${esc(x.card.setName)} · #${esc(x.card.number)}${x.card.setTotal ? '/' + esc(x.card.setTotal) : ''}</div>
+    </div>`).join('');
+  $$('.cand', grid).forEach(el => el.addEventListener('click', () => showResult(shown[+el.dataset.i].card)));
+  $('#candNote').textContent = `נמצאו ${cands.length} קלפים אפשריים. לחץ על הקלף שנראה בדיוק כמו שלך (שים לב לסמל הסט ולמספר בתחתית).`;
+}
+
+/* ---- Result ---- */
+function priceTableHTML(card) {
+  const p = card.prices || {};
+  const rows = [];
+  for (const v of availableVariants(card)) {
+    const t = p.tcg && p.tcg[v];
+    if (!t) continue;
+    rows.push(`<tr><td>TCGplayer · ${esc(VARIANT_LABELS[v] || v)}</td>
+      <td class="num">${fmtMoney(t.low, '$')}</td><td class="num"><b>${fmtMoney(t.market || t.mid, '$')}</b></td><td class="num">${fmtILS((t.market || t.mid) ? (t.market || t.mid) * rates.USD : null)}</td></tr>`);
+  }
+  if (p.cm) {
+    rows.push(`<tr><td>Cardmarket · מגמה</td><td class="num">${fmtMoney(p.cm.low, '€')}</td><td class="num"><b>${fmtMoney(p.cm.trend, '€')}</b></td><td class="num">${fmtILS(p.cm.trend ? p.cm.trend * rates.EUR : null)}</td></tr>`);
+    if (p.cm.avg30) rows.push(`<tr><td>Cardmarket · ממוצע 30 יום</td><td class="num"></td><td class="num">${fmtMoney(p.cm.avg30, '€')}</td><td class="num">${fmtILS(p.cm.avg30 * rates.EUR)}</td></tr>`);
+    if (p.cm.reverseTrend) rows.push(`<tr><td>Cardmarket · רוורס הולו</td><td class="num">${fmtMoney(p.cm.reverseLow, '€')}</td><td class="num">${fmtMoney(p.cm.reverseTrend, '€')}</td><td class="num">${fmtILS(p.cm.reverseTrend * rates.EUR)}</td></tr>`);
+  }
+  if (!rows.length) return '<p class="muted">אין כרגע נתוני מחיר לקלף הזה במקורות.</p>';
+  return `<table class="price-table"><thead><tr><th>מקור</th><th>הכי זול</th><th>מחיר שוק</th><th>בשקלים</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function sourceLinksHTML(card) {
+  const p = card.prices || {};
+  const links = [];
+  if (p.tcgUrl) links.push(`<a href="${esc(p.tcgUrl)}" target="_blank" rel="noopener">🔗 TCGplayer</a>`);
+  if (p.cmUrl) links.push(`<a href="${esc(p.cmUrl)}" target="_blank" rel="noopener">🔗 Cardmarket</a>`);
+  const ebayQ = `${card.name} ${card.number}${card.setTotal ? '/' + card.setTotal : ''} ${card.setName}`;
+  links.push(`<a href="https://www.ebay.com/sch/i.html?LH_Sold=1&LH_Complete=1&_nkw=${encodeURIComponent(ebayQ)}" target="_blank" rel="noopener">🔗 מכירות ב-eBay</a>`);
+  const upd = p.updated ? `<span class="muted" style="font-size:.75rem">מחירים עודכנו: ${esc(String(p.updated).slice(0, 10))}</span>` : '';
+  return `<div class="src-links">${links.join('')}</div>${upd}`;
+}
+
+function variantOptions(card, selected) {
+  return availableVariants(card).map(v => `<option value="${esc(v)}" ${v === selected ? 'selected' : ''}>${esc(VARIANT_LABELS[v] || v)}</option>`).join('');
+}
+function conditionOptions(selected) {
+  const opt = (c) => `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.label}</option>`;
+  return `<optgroup label="קלף רגיל">${CONDITIONS.filter(c => !c.graded).map(opt).join('')}</optgroup>
+    <optgroup label="קלף מדורג (PSA / CGC / BGS)">${CONDITIONS.filter(c => c.graded).map(opt).join('')}</optgroup>`;
+}
+
+function valueBoxHTML(est) {
+  return `<div class="lbl">שווי משוער</div>
+    <div class="big">${est.ils != null ? fmtILS(est.ils) : 'אין מחיר'}</div>
+    ${est.ils != null ? `<div class="range">טווח: ${fmtILS(est.low)} – ${fmtILS(est.high)} · לפי ${esc(est.basis.join(' + '))}</div>` : '<div class="range">אין נתוני מכירות לקלף הזה</div>'}
+    ${est.graded ? `<div class="range" style="margin-top:6px">🛡️ מחיר קלף מדורג משתנה מאוד – כדאי לבדוק מכירות של "PSA ${est.graded}" ב-eBay (קישור למטה).</div>` : ''}`;
+}
+
+let resultSeq = 0;
+async function showResult(card) {
+  const seq = ++resultSeq;
+  if (!hasPrices(card) && card.src !== 'tcgdex') {
+    showStep('stepResult');
+    $('#stepResult').innerHTML = `<div class="panel"><div class="row muted"><span class="spinner"></span> מחפש מחיר במקור נוסף...</div>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px" id="btnEnrichCancel">↩️ חזרה</button></div>`;
+    $('#btnEnrichCancel').addEventListener('click', () => { resultSeq++; showStep('stepIdentify'); });
+    card = await enrichPrices(card);
+    if (seq !== resultSeq) return;
+  }
+  renderResult(card);
+}
+
+function renderResult(card) {
+  cap.selected = card;
+  showStep('stepResult');
+  const box = $('#stepResult');
+  let variant = bestVariant(card, cap.aiFinish);
+  let condition = 'NM';
+  let qty = 1;
+  box.innerHTML = `
+    <div class="panel">
+      <div class="result-imgs">
+        <figure>${cap.cardCanvas ? '<canvas id="resMine"></canvas>' : `<img src="${esc(card.img || card.imgLarge)}" alt="">`}<figcaption>${cap.cardCanvas ? 'הצילום שלך' : 'תמונת הקלף'}</figcaption></figure>
+        <figure><img src="${esc(card.img || card.imgLarge)}" ${card.imgLarge && card.img ? `srcset="${esc(card.img)} 1x, ${esc(card.imgLarge)} 2x"` : ''} alt="${esc(card.name)}"><figcaption>הקלף במאגר</figcaption></figure>
+      </div>
+      <div style="margin-top:14px">
+        <div class="card-title">${esc(card.name)}</div>
+        <div class="card-meta">${esc(card.setName)} · #${esc(card.number)}${card.setTotal ? '/' + esc(card.setTotal) : ''}${card.rarity ? ' · ' + esc(card.rarity) : ''}${card.releaseDate ? ' · ' + esc(String(card.releaseDate).slice(0, 4)) : ''}</div>
+      </div>
+      <div class="value-box" id="resValue"></div>
+      <div class="two-col">
+        <div><label class="field" for="resVariant">סוג הקלף</label><select id="resVariant">${variantOptions(card, variant)}</select></div>
+        <div><label class="field" for="resCond">מצב הקלף</label><select id="resCond">${conditionOptions(condition)}</select></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>📊 מחירים מהמקורות</h2>
+      ${priceTableHTML(card)}
+      ${sourceLinksHTML(card)}
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <span style="font-weight:700">כמות</span>
+        <div class="qty-ctrl"><button id="qtyMinus">−</button><span id="qtyVal">1</span><button id="qtyPlus">+</button></div>
+      </div>
+      ${captureMode === 'trade'
+        ? `<button class="btn btn-blue btn-block" id="btnAddToTrade" style="margin-top:14px">🤝 הוסף לטרייד (${tradeSide === 'get' ? 'אני מקבל' : 'אני נותן'})</button>`
+        : `<button class="btn ${captureMode === 'add' ? 'btn-red' : 'btn-yellow'} btn-block" id="btnAddToColl" style="margin-top:14px">
+        ${captureMode === 'add' ? '⭐ הוסף לאוסף שלי' : '⭐ הוסף גם לאוסף שלי'}</button>`}
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-ghost grow" id="btnResBack">↩️ זה לא הקלף</button>
+        <button class="btn btn-ghost grow" id="btnResNext">📷 קלף הבא</button>
+      </div>
+    </div>`;
+  if (cap.cardCanvas) {
+    const c = $('#resMine');
+    c.width = cap.cardCanvas.width; c.height = cap.cardCanvas.height;
+    c.getContext('2d').drawImage(cap.cardCanvas, 0, 0);
+  }
+  const update = () => { $('#resValue').innerHTML = valueBoxHTML(estimate(card, variant, condition)); };
+  update();
+  $('#resVariant').addEventListener('change', (e) => { variant = e.target.value; update(); });
+  $('#resCond').addEventListener('change', (e) => { condition = e.target.value; update(); });
+  $('#qtyMinus').addEventListener('click', () => { qty = Math.max(1, qty - 1); $('#qtyVal').textContent = qty; });
+  $('#qtyPlus').addEventListener('click', () => { qty++; $('#qtyVal').textContent = qty; });
+  $('#btnResBack').addEventListener('click', () => showStep('stepIdentify'));
+  $('#btnResNext').addEventListener('click', () => startCaptureFlow());
+  if (captureMode === 'trade') {
+    $('#btnAddToTrade').addEventListener('click', () => {
+      const photo = photoDataUrl(cap.cardCanvas);
+      for (let i = 0; i < qty; i++) trade[tradeSide].push({ card, variant, condition, photo, fromUid: null });
+      saveTrade();
+      toast(`🤝 ${card.name} נוסף לטרייד`);
+      go('trade');
+    });
+    return;
+  }
+  $('#btnAddToColl').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    try {
+      await addToCollection(card, variant, condition, qty, cap.cardCanvas);
+      toast(`✨ ${card.name} נוסף לאוסף!`);
+      e.target.textContent = '✔ נוסף לאוסף';
+    } catch (err) {
+      console.error(err);
+      toast('שגיאה בשמירה 😕');
+      e.target.disabled = false;
+    }
+  });
+}
+
+function photoDataUrl(canvas) {
+  if (!canvas) return null;
+  const c = document.createElement('canvas');
+  c.width = 360; c.height = 504;
+  c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+async function addToCollection(card, variant, condition, qty, canvas) {
+  const items = await db.all();
+  const same = items.find(it => it.card.id === card.id && it.variant === variant && it.condition === condition);
+  if (same) {
+    same.qty += qty;
+    if (!same.photo && canvas) same.photo = photoDataUrl(canvas);
+    same.card = card;
+    await db.put(same);
+    return same;
+  }
+  const item = {
+    uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    card, variant, condition, qty,
+    photo: photoDataUrl(canvas),
+    addedAt: Date.now(),
+    pricedAt: Date.now(),
+    firstValue: estimate(card, variant, condition).ils,
+  };
+  await db.put(item);
+  return item;
+}
+
+/* =====================================================================
+   Collection view
+   ===================================================================== */
+// Photos are stored as data: URLs. Putting hundreds of them straight into the HTML is slow,
+// so each one is turned into a short blob: URL once and reused.
+const photoUrlCache = new Map();
+function photoSrc(photo) {
+  if (!photo || !photo.startsWith('data:')) return photo || '';
+  const key = photo.length + ':' + photo.slice(-48);
+  let u = photoUrlCache.get(key);
+  if (!u) {
+    try {
+      const [head, b64] = photo.split(',');
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      u = URL.createObjectURL(new Blob([bytes], { type: (head.match(/:(.*?);/) || [])[1] || 'image/jpeg' }));
+    } catch (e) { u = photo; }
+    photoUrlCache.set(key, u);
+  }
+  return u;
+}
+let collectionCache = [];
+const itemValue = (it) => { const e = estimate(it.card, it.variant, it.condition); return e.ils == null ? 0 : e.ils * it.qty; };
+
+async function renderCollection() {
+  collectionCache = await db.all();
+  const items = collectionCache;
+  const total = items.reduce((s, it) => s + it.qty, 0);
+  const value = items.reduce((s, it) => s + itemValue(it), 0);
+  $('#statCount').textContent = total;
+  $('#statUnique').textContent = new Set(items.map(it => it.card.id)).size;
+  $('#statValue').textContent = fmtILS(value);
+  $('#collEmpty').hidden = items.length > 0;
+  $('#collFooter').hidden = items.length === 0;
+  recordHistory(value, total);
+  for (const it of items) {
+    if (it.firstValue === undefined) { it.firstValue = estimate(it.card, it.variant, it.condition).ils; db.put(it); }
+  }
+  checkBadges(items);
+  if (collTab !== 'cards') { renderCollTab(); return; }
+
+  const q = $('#collSearch').value.trim().toLowerCase();
+  let list = items.filter(it => !q || [it.card.name, it.card.setName, it.card.number].join(' ').toLowerCase().includes(q));
+  const sort = $('#collSort').value;
+  list.sort((a, b) => {
+    if (sort === 'value') return itemValue(b) / b.qty - itemValue(a) / a.qty;
+    if (sort === 'new') return b.addedAt - a.addedAt;
+    if (sort === 'name') return a.card.name.localeCompare(b.card.name);
+    if (sort === 'set') return (b.card.releaseDate || '').localeCompare(a.card.releaseDate || '') || (parseInt(a.card.number, 10) || 0) - (parseInt(b.card.number, 10) || 0);
+    return 0;
+  });
+  $('#collGrid').innerHTML = list.map(it => {
+    const e = estimate(it.card, it.variant, it.condition);
+    const img = photoSrc(it.photo) || it.card.img || '';
+    const shiny = /holo/i.test(it.variant) || /holo|ultra|secret|illustration|hyper|rainbow|ex\b|vmax|vstar/i.test(it.card.rarity || '');
+    return `<div class="tile ${shiny ? 'shiny' : ''}" data-uid="${esc(it.uid)}">
+      ${it.qty > 1 ? `<span class="qty">×${it.qty}</span>` : ''}
+      <img class="img" src="${esc(img)}" alt="" loading="lazy" decoding="async">
+      <div class="info">
+        <div class="name" dir="ltr" style="text-align:right">${esc(it.card.name)}</div>
+        <div class="set">${esc(it.card.setName)} #${esc(it.card.number)}</div>
+        <div class="val">${e.ils != null ? fmtILS(e.ils) : '—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  if (items.length && !list.length) $('#collGrid').innerHTML = '<p class="muted">לא נמצאו קלפים בחיפוש.</p>';
+  $$('.tile', $('#collGrid')).forEach(el => el.addEventListener('click', () => openItem(el.dataset.uid)));
+}
+let collSearchTimer = null;
+$('#collSearch').addEventListener('input', () => { clearTimeout(collSearchTimer); collSearchTimer = setTimeout(renderCollection, 200); });
+$('#collSort').addEventListener('change', renderCollection);
+
+function openItem(uid) {
+  const it = collectionCache.find(x => x.uid === uid);
+  if (!it) return;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  let changed = false;
+  const close = () => { bg.remove(); if (changed) renderCollection(); };
+  bg.addEventListener('click', (e) => { if (e.target === bg) close(); });
+  let showMine = !!it.photo;
+  const render = () => {
+    const e = estimate(it.card, it.variant, it.condition);
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+      <button class="close" aria-label="סגור">✕</button>
+      <div class="card-title">${esc(it.card.name)}</div>
+      <div class="card-meta">${esc(it.card.setName)} · #${esc(it.card.number)}${it.card.setTotal ? '/' + esc(it.card.setTotal) : ''}${it.card.rarity ? ' · ' + esc(it.card.rarity) : ''}</div>
+      ${it.photo ? `<div class="img-toggle"><button data-img="mine" class="${showMine ? 'on' : ''}">הצילום שלי</button><button data-img="official" class="${showMine ? '' : 'on'}">תמונה רשמית</button></div>` : '<div style="height:10px"></div>'}
+      <img class="main-img" src="${esc(showMine ? photoSrc(it.photo) : it.card.img)}" ${showMine || !it.card.imgLarge ? '' : `srcset="${esc(it.card.img)} 1x, ${esc(it.card.imgLarge)} 2x"`} alt="">
+      <div class="value-box">${valueBoxHTML(e)}${it.qty > 1 && e.ils != null ? `<div class="range" style="margin-top:4px">סה"כ ל-${it.qty} קלפים: <b>${fmtILS(e.ils * it.qty)}</b></div>` : ''}</div>
+      <div class="panel">
+        <div class="two-col">
+          <div><label class="field">סוג הקלף</label><select data-f="variant">${variantOptions(it.card, it.variant)}</select></div>
+          <div><label class="field">מצב הקלף</label><select data-f="condition">${conditionOptions(it.condition)}</select></div>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-top:12px">
+          <span style="font-weight:700">כמות</span>
+          <div class="qty-ctrl"><button data-q="-1">−</button><span>${it.qty}</span><button data-q="1">+</button></div>
+        </div>
+      </div>
+      <div class="panel"><h2>📊 מחירים</h2>${priceTableHTML(it.card)}${sourceLinksHTML(it.card)}</div>
+      <div class="row">
+        <button class="btn btn-ghost grow" data-act="refresh">🔄 עדכן מחיר</button>
+        <button class="btn btn-ghost grow" data-act="delete" style="color:var(--red)">🗑️ מחק מהאוסף</button>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:.75rem">נוסף לאוסף: ${new Date(it.addedAt).toLocaleDateString('he-IL')}</p>
+    </div>`;
+    $('.close', bg).addEventListener('click', close);
+    $$('[data-img]', bg).forEach(b => b.addEventListener('click', () => { showMine = b.dataset.img === 'mine'; render(); }));
+    $$('select[data-f]', bg).forEach(s => s.addEventListener('change', async () => { it[s.dataset.f] = s.value; changed = true; await db.put(it); render(); }));
+    $$('[data-q]', bg).forEach(b => b.addEventListener('click', async () => {
+      const nq = it.qty + parseInt(b.dataset.q, 10);
+      if (nq < 1) return;
+      it.qty = nq; changed = true; await db.put(it); render();
+    }));
+    $('[data-act=refresh]', bg).addEventListener('click', async (ev) => {
+      ev.target.disabled = true; ev.target.textContent = '...מעדכן';
+      try { it.card = await refetchCard(it.card); it.pricedAt = Date.now(); changed = true; await db.put(it); toast(hasPrices(it.card) ? 'המחיר עודכן' : 'לא נמצא מחיר לקלף הזה כרגע'); }
+      catch (err) { toast('אין חיבור למאגר כרגע'); }
+      render();
+    });
+    $('[data-act=delete]', bg).addEventListener('click', async () => {
+      if (!confirm(`למחוק את ${it.card.name} מהאוסף?`)) return;
+      await db.del(it.uid);
+      changed = true;
+      close();
+    });
+  };
+  render();
+  document.body.appendChild(bg);
+}
+
+$('#btnRefreshAll').addEventListener('click', async (e) => {
+  const btn = e.target;
+  btn.disabled = true;
+  await refreshRates(true);
+  const items = await db.all();
+  const byId = new Map();
+  let i = 0, failed = 0;
+  for (const it of items) {
+    i++;
+    btn.textContent = `🔄 מעדכן ${i}/${items.length}...`;
+    try {
+      if (!byId.has(it.card.id)) { byId.set(it.card.id, await refetchCard(it.card)); await sleep(150); }
+      const cur = await db.get(it.uid);
+      if (!cur) continue;
+      cur.card = byId.get(it.card.id);
+      cur.pricedAt = Date.now();
+      if (cur.firstValue == null) cur.firstValue = estimate(cur.card, cur.variant, cur.condition).ils;
+      await db.put(cur);
+      if (!hasPrices(cur.card)) failed++;
+    } catch (err) { failed++; }
+  }
+  btn.disabled = false;
+  btn.textContent = '🔄 עדכן מחירים לכל האוסף';
+  toast(failed ? `עודכנו ${items.length - failed} קלפים, ${failed} נכשלו` : 'כל המחירים עודכנו ✨');
+  renderCollection();
+});
+
+/* =====================================================================
+   Trade checker
+   ===================================================================== */
+const trade = (() => {
+  try {
+    const t = JSON.parse(localStorage.getItem('nitai-trade') || 'null');
+    if (t && Array.isArray(t.give) && Array.isArray(t.get)) return t;
+  } catch (e) {}
+  return { give: [], get: [] };
+})();
+function saveTrade() {
+  try { localStorage.setItem('nitai-trade', JSON.stringify(trade)); }
+  catch (e) {
+    // storage full (photos) – keep the trade without photos
+    try { localStorage.setItem('nitai-trade', JSON.stringify({ give: trade.give.map(x => ({ ...x, photo: null })), get: trade.get.map(x => ({ ...x, photo: null })) })); } catch (e2) {}
+  }
+}
+const tradeItemValue = (x) => estimate(x.card, x.variant, x.condition).ils;
+
+/** Decide if the trade is worth it. Pure function so it is easy to reason about. */
+function tradeVerdict(give, get) {
+  const sum = (arr) => arr.reduce((s, x) => s + (tradeItemValue(x) || 0), 0);
+  const giveVal = sum(give), getVal = sum(get);
+  const missing = [...give, ...get].filter(x => tradeItemValue(x) == null);
+  const diff = getVal - giveVal;
+  const base = Math.max(giveVal, getVal);
+  const ratio = base > 0 ? diff / base : 0;
+  let level;
+  if (!give.length || !get.length) level = 'none';
+  else if (base === 0) level = 'noprice';
+  else if (ratio > 0.1) level = 'good';
+  else if (ratio >= -0.1) level = 'fair';
+  else if (ratio >= -0.3) level = 'bad';
+  else level = 'terrible';
+  return { giveVal, getVal, diff, ratio, level, missing };
+}
+
+function tradeItemHTML(x, side, i) {
+  const v = tradeItemValue(x);
+  return `<div class="t-item">
+    <img src="${esc(photoSrc(x.photo) || x.card.img || '')}" alt="" loading="lazy">
+    <div class="t-info">
+      <div class="t-name">${esc(x.card.name)}</div>
+      <div class="t-sub">${esc(x.card.setName)} #${esc(x.card.number)}${x.fromUid ? ' · מהאוסף' : ''}</div>
+      <div class="t-selects">
+        <select data-side="${side}" data-i="${i}" data-f="variant" aria-label="סוג הקלף">${variantOptions(x.card, x.variant)}</select>
+        <select data-side="${side}" data-i="${i}" data-f="condition" aria-label="מצב הקלף">${conditionOptions(x.condition)}</select>
+      </div>
+    </div>
+    <div class="t-val">${v != null ? fmtILS(v) : '—'}</div>
+    <button class="t-del" data-del-side="${side}" data-i="${i}" aria-label="הסר">✕</button>
+  </div>`;
+}
+
+async function renderTrade() {
+  const items = await db.all().catch(() => []);
+  const v = tradeVerdict(trade.give, trade.get);
+  $('#tradeGiveList').innerHTML = trade.give.length ? trade.give.map((x, i) => tradeItemHTML(x, 'give', i)).join('') : '<div class="t-empty">עוד לא בחרת קלפים לתת.</div>';
+  $('#tradeGetList').innerHTML = trade.get.length ? trade.get.map((x, i) => tradeItemHTML(x, 'get', i)).join('') : '<div class="t-empty">סרוק את הקלפים שהחבר מציע לך.</div>';
+  $('#tradeGiveTot').textContent = fmtILS(v.giveVal);
+  $('#tradeGetTot').textContent = fmtILS(v.getVal);
+  $('#btnTradeDo').disabled = !(trade.give.length || trade.get.length);
+
+  const amount = fmtILS(Math.abs(v.diff));
+  const pct = Math.round(Math.abs(v.ratio) * 100);
+  const V = {
+    none: ['🤔', 'בוא נבדוק!', 'הוסף קלפים לשני הצדדים ואני אגיד לך אם הטרייד משתלם.'],
+    noprice: ['❓', 'אין מספיק מחירים', 'לא מצאתי מחיר לקלפים האלה, אז אני לא יכול להשוות. נסה שוב כשיש אינטרנט, או בדוק את הקלפים ב-eBay.'],
+    good: ['🎉', 'טרייד משתלם לך!', `אתה מקבל בערך <b>${amount}</b> יותר ממה שאתה נותן (${pct}%).`],
+    fair: ['⚖️', 'טרייד הוגן', `השווי של שני הצדדים כמעט שווה (הפרש של ${amount}). טרייד טוב לשניכם!`],
+    bad: ['⚠️', 'פחות משתלם לך', `אתה נותן בערך <b>${amount}</b> יותר ממה שאתה מקבל (${pct}%).`],
+    terrible: ['🛑', 'לא כדאי!', `אתה נותן בערך <b>${amount}</b> יותר ממה שאתה מקבל (${pct}%). כדאי לבקש עוד קלפים או לוותר.`],
+  }[v.level];
+
+  const tips = [];
+  if (v.level === 'bad' || v.level === 'terrible') tips.push(`💡 כדי שיהיה הוגן, בקש מהחבר עוד קלפים בשווי של בערך ${amount}.`);
+  if (v.level === 'good' && v.ratio > 0.3) tips.push('🤝 הטרייד ממש טוב בשבילך – כדאי לוודא שגם החבר יודע כמה הקלפים שווים, כדי שיישארו חברים 🙂');
+  if (v.missing.length) tips.push(`❓ אין מחיר ל-${v.missing.length} קלפים (${v.missing.map(x => esc(x.card.name)).join(', ')}) – הם לא נספרו בחישוב.`);
+  if (trade.get.some(x => x.condition === 'NM')) tips.push('🔍 בדוק את הקלפים של החבר מקרוב: קצוות לבנים, שריטות או קיפולים מורידים מהשווי. אפשר לשנות את המצב ברשימה.');
+  for (const x of trade.give) {
+    const owned = x.fromUid && items.find(it => it.uid === x.fromUid);
+    const givingCount = trade.give.filter(y => y.fromUid === x.fromUid).length;
+    if (owned && owned.qty - givingCount <= 0 && !tips.some(t => t.includes(x.card.name))) tips.push(`📌 ${esc(x.card.name)} – זה העותק האחרון שלך מהקלף הזה.`);
+  }
+  const gw = v.giveVal + v.getVal > 0 ? (v.giveVal / (v.giveVal + v.getVal)) * 100 : 50;
+  $('#tradeVerdict').innerHTML = `<div class="verdict ${v.level}">
+    <div class="v-emoji">${V[0]}</div>
+    <div class="v-title">${V[1]}</div>
+    <div class="v-text">${V[2]}</div>
+    ${v.level !== 'none' && v.level !== 'noprice' ? `<div class="scale"><div class="s-give" style="width:${gw}%"></div><div class="s-get" style="width:${100 - gw}%"></div></div>
+      <div class="scale-lbl"><span style="color:var(--red)">📤 נותן ${fmtILS(v.giveVal)}</span><span style="color:var(--blue)">📥 מקבל ${fmtILS(v.getVal)}</span></div>` : ''}
+    ${tips.length ? `<ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul>` : ''}
+  </div>`;
+}
+
+$('#view-trade').addEventListener('change', (e) => {
+  const s = e.target.closest('select[data-side]');
+  if (!s) return;
+  trade[s.dataset.side][+s.dataset.i][s.dataset.f] = s.value;
+  saveTrade();
+  renderTrade();
+});
+$('#view-trade').addEventListener('click', (e) => {
+  const del = e.target.closest('[data-del-side]');
+  if (del) { trade[del.dataset.delSide].splice(+del.dataset.i, 1); saveTrade(); renderTrade(); return; }
+  const scan = e.target.closest('[data-trade-scan]');
+  if (scan) { goTradeScan(scan.dataset.tradeScan); return; }
+  const search = e.target.closest('[data-trade-search]');
+  if (search) { goTradeScan(search.dataset.tradeSearch, true); return; }
+  if (e.target.closest('[data-trade-pick]')) openTradePicker();
+});
+
+async function openTradePicker() {
+  const items = await db.all();
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  const close = () => { bg.remove(); renderTrade(); };
+  bg.addEventListener('click', (e) => { if (e.target === bg) close(); });
+  const render = () => {
+    const used = (uid) => trade.give.filter(x => x.fromUid === uid).length;
+    items.sort((a, b) => itemValue(b) / b.qty - itemValue(a) / a.qty);
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+      <button class="close" aria-label="סגור">✕</button>
+      <h2>📚 איזה קלף אתה נותן?</h2>
+      <p class="muted">לחץ על קלף כדי להוסיף אותו לטרייד.</p>
+      ${items.length ? `<div class="pick-grid">${items.map(it => {
+        const left = it.qty - used(it.uid);
+        const e = estimate(it.card, it.variant, it.condition);
+        return `<div class="tile ${left <= 0 ? 'used' : ''}" data-uid="${esc(it.uid)}">
+          ${left > 1 ? `<span class="qty">×${left}</span>` : ''}
+          <img class="img" src="${esc(photoSrc(it.photo) || it.card.img || '')}" alt="" loading="lazy" decoding="async">
+          <div class="info"><div class="name" dir="ltr" style="text-align:right">${esc(it.card.name)}</div>
+          <div class="val">${e.ils != null ? fmtILS(e.ils) : '—'}</div></div></div>`;
+      }).join('')}</div>` : '<p class="muted" style="margin-top:12px">האוסף ריק – אפשר לסרוק את הקלף במקום.</p>'}
+      <button class="btn btn-blue btn-block" style="margin-top:14px" data-done>סיימתי</button>
+    </div>`;
+    $('.close', bg).addEventListener('click', close);
+    $('[data-done]', bg).addEventListener('click', close);
+    $$('.tile', bg).forEach(t => t.addEventListener('click', () => {
+      const it = items.find(x => x.uid === t.dataset.uid);
+      trade.give.push({ card: it.card, variant: it.variant, condition: it.condition, photo: it.photo || null, fromUid: it.uid });
+      saveTrade();
+      toast(`📤 ${it.card.name} נוסף לטרייד`, 1400);
+      render();
+    }));
+  };
+  render();
+  document.body.appendChild(bg);
+}
+
+$('#btnTradeDo').addEventListener('click', async () => {
+  if (!confirm('לעדכן את האוסף? הקלפים שנתת יוצאו מהאוסף, והקלפים שקיבלת ייכנסו אליו.')) return;
+  const items = await db.all();
+  let removed = 0;
+  for (const x of trade.give) {
+    const it = x.fromUid && items.find(y => y.uid === x.fromUid);
+    if (!it) continue;
+    it.qty -= 1;
+    removed++;
+    if (it.qty <= 0) await db.del(it.uid); else await db.put(it);
+  }
+  for (const x of trade.get) {
+    const it = await addToCollection(x.card, x.variant, x.condition, 1, null);
+    if (x.photo && !it.photo) { it.photo = x.photo; await db.put(it); }
+  }
+  const added = trade.get.length;
+  trade.give = []; trade.get = [];
+  saveTrade();
+  bumpStat('trades');
+  toast(`🤝 הטרייד נשמר! יצאו ${removed} קלפים, נכנסו ${added}.`);
+  go('collection');
+});
+$('#btnTradeClear').addEventListener('click', () => {
+  if ((trade.give.length || trade.get.length) && !confirm('לנקות את הטרייד ולהתחיל חדש?')) return;
+  trade.give = []; trade.get = [];
+  saveTrade();
+  renderTrade();
+});
+
+/* =====================================================================
+   Settings view
+   ===================================================================== */
+function renderSettings() {
+  renderRatesInfo();
+  renderProfileSettings();
+  $('#setGhToken').value = settings.get('ghToken');
+  cloudStatus();
+  $('#setAnthropic').value = settings.get('anthropicKey');
+  $('#setPtcg').value = settings.get('ptcgKey');
+}
+$('#btnSaveSettings').addEventListener('click', () => {
+  settings.set('anthropicKey', $('#setAnthropic').value.trim());
+  settings.set('ptcgKey', $('#setPtcg').value.trim());
+  toast('ההגדרות נשמרו');
+});
+$('#btnRates').addEventListener('click', async () => { await refreshRates(true); toast(rates.live ? 'השערים עודכנו' : 'לא הצלחתי לעדכן שערים'); });
+$('#btnExport').addEventListener('click', async () => {
+  const items = await db.all();
+  const blob = new Blob([JSON.stringify({ app: 'nitai-pokedex', version: 1, exportedAt: new Date().toISOString(), items })], { type: 'application/json' });
+  const fileName = `pokedex-${new Date().toISOString().slice(0, 10)}.json`;
+  try {
+    const file = new File([blob], fileName, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'גיבוי הפוקדקס' });
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$('#fileImport').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    const items = Array.isArray(data) ? data : data.items;
+    if (!Array.isArray(items)) throw new Error('format');
+    let n = 0;
+    for (const it of items) {
+      if (it && it.uid && it.card && it.card.id) {
+        it.qty = Math.max(1, parseInt(it.qty, 10) || 1);
+        if (it.photo && !/^data:image\/(jpeg|png|webp);base64,/.test(it.photo)) it.photo = null;
+        await db.put(it); n++;
+      }
+    }
+    toast(`יובאו ${n} קלפים`);
+  } catch (err) {
+    toast('קובץ הגיבוי לא תקין');
+  }
+});
+$('#btnClearAll').addEventListener('click', async () => {
+  if (!confirm('בטוח? כל האוסף יימחק!')) return;
+  if (!confirm('באמת בטוח? אי אפשר לבטל את זה.')) return;
+  await db.clear();
+  toast('האוסף נמחק');
+});
+
+/* =====================================================================
+   Small persisted stats (scans, trades, invites)
+   ===================================================================== */
+const lsGet = (k, def) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? def : v; } catch (e) { return def; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+function bumpStat(k) {
+  const st = lsGet('nitai-stats', {});
+  st[k] = (st[k] || 0) + 1;
+  lsSet('nitai-stats', st);
+  onDbChange();
+}
+
+/* =====================================================================
+   Profile (sign-up) & WhatsApp invite
+   ===================================================================== */
+const getProfile = () => lsGet('nitai-profile', null);
+
+function normalizePhone(raw) {
+  const p = String(raw || '').replace(/[\s\-().]/g, '');
+  if (/^05\d{8}$/.test(p)) return p;                 // Israeli mobile: 05X-XXXXXXX
+  if (/^\+9725\d{8}$/.test(p)) return '0' + p.slice(4);
+  if (/^\+\d{8,15}$/.test(p)) return p;              // international
+  return null;
+}
+function validateProfile(name, phone) {
+  if (String(name || '').trim().length < 2) return 'נא לכתוב שם (לפחות 2 אותיות)';
+  if (!normalizePhone(phone)) return 'מספר הטלפון לא תקין (לדוגמה 050-1234567)';
+  return '';
+}
+function saveProfile(name, phone, consent) {
+  const prev = getProfile() || {};
+  lsSet('nitai-profile', {
+    ...prev,
+    id: prev.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
+    name: name.trim(), phone: normalizePhone(phone),
+    consent: consent === undefined ? prev.consent : consent,
+    registeredAt: prev.registeredAt || Date.now(),
+    sentToSheet: false,
+  });
+  applyProfile();
+  onDbChange();
+  sendSignup();
+}
+
+/* ---- Central sign-up list (Google Sheet via an Apps Script web app) ----
+   The script lives in the admin's Google account (see google-apps-script.gs in this folder).
+   Paste its "/exec" web-app URL here to turn the central list on. */
+const SIGNUP_ENDPOINT = '';
+async function sendSignup() {
+  const pr = getProfile();
+  if (!SIGNUP_ENDPOINT || !pr || !pr.consent || pr.sentToSheet || !navigator.onLine) return;
+  try {
+    // text/plain + no-cors: a "simple" request that Apps Script accepts without a CORS preflight
+    await fetch(SIGNUP_ENDPOINT, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        id: pr.id, name: pr.name, phone: pr.phone, consent: !!pr.consent, registeredAt: pr.registeredAt,
+        device: /iphone|ipad/i.test(navigator.userAgent) ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'אחר',
+      }),
+    });
+    const cur = getProfile();
+    if (cur && cur.id === pr.id && cur.name === pr.name && cur.phone === pr.phone) lsSet('nitai-profile', { ...cur, sentToSheet: true });
+  } catch (e) {
+    console.warn('signup send failed, will retry', e);
+  }
+}
+function applyProfile() {
+  const pr = getProfile();
+  const title = pr ? `הפוקדקס של ${pr.name}` : 'הפוקדקס';
+  $('#appTitle').textContent = title;
+  document.title = title;
+}
+
+function showWelcome() {
+  const prev = getProfile() || {};
+  const w = document.createElement('div');
+  w.className = 'welcome';
+  w.innerHTML = `<div class="box">
+    <div class="pokeball" aria-hidden="true"></div>
+    <h2>ברוכים הבאים לפוקדקס! ⚡</h2>
+    <p class="muted">האפליקציה לאוסף קלפי פוקימון: מצלמים קלף, רואים כמה הוא שווה ובודקים טריידים.</p>
+    <form id="welcomeForm" novalidate>
+      <label class="field" for="wName">איך קוראים לך?</label>
+      <input type="text" id="wName" autocomplete="name" placeholder="השם שלך" required value="${esc(prev.name || '')}">
+      <label class="field" for="wPhone" style="margin-top:12px">מספר טלפון</label>
+      <input type="tel" id="wPhone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="050-1234567" required value="${esc(prev.phone || '')}">
+      <p class="muted" style="font-size:.78rem;margin-top:10px;line-height:1.5">
+        🔒 השם והטלפון נשלחים לרשימת המשתמשים של מנהל האפליקציה, כדי לדעת מי משתמש בה וליצור קשר במידת הצורך.
+        הם לא מתפרסמים ולא מועברים לאף אחד אחר.
+      </p>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:.88rem;cursor:pointer">
+        <input type="checkbox" id="wConsent" style="width:20px;height:20px;flex:none;margin-top:2px">
+        <span>אני מסכים/ה לשליחת הפרטים, <b>ואם אני מתחת לגיל 18 – הורה אישר לי</b></span>
+      </label>
+      <div class="err" id="wErr"></div>
+      <button class="btn btn-red btn-block" type="submit" style="margin-top:8px">🚀 בואו נתחיל!</button>
+    </form>
+  </div>`;
+  document.body.appendChild(w);
+  $('#wName', w).focus();
+  $('#welcomeForm', w).addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#wName', w).value, phone = $('#wPhone', w).value;
+    const err = validateProfile(name, phone) || ($('#wConsent', w).checked ? '' : 'צריך לסמן את האישור כדי להמשיך');
+    $('#wErr', w).textContent = err;
+    if (err) return;
+    saveProfile(name, phone, true);
+    w.remove();
+    toast(`שלום ${name.trim()}! 👋 בוא נתחיל לאסוף`);
+  });
+}
+
+const APP_URL = location.origin + location.pathname;
+function inviteFriend() {
+  const pr = getProfile();
+  const who = pr ? pr.name : 'חבר';
+  const msg = `היי! 👋 ${who} מזמין אותך להצטרף לפוקדקס – אפליקציה לאוסף קלפי פוקימון 🎴
+
+📸 מצלמים קלף והיא מזהה אותו
+💰 רואים כמה כל קלף שווה בשקלים
+🤝 בודקים אם טרייד משתלם
+
+👇 להורדה:
+${APP_URL}
+
+📲 אחרי שנפתח: לחץ על "התקן" (באייפון: שיתוף ⬆️ ← "הוסף למסך הבית")`;
+  bumpStat('invites');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+document.addEventListener('click', (e) => { if (e.target.closest('[data-invite]')) inviteFriend(); });
+
+function renderProfileSettings() {
+  const pr = getProfile() || {};
+  $('#profName').value = pr.name || '';
+  $('#profPhone').value = pr.phone || '';
+  $('#profErr').textContent = '';
+}
+$('#btnSaveProfile').addEventListener('click', () => {
+  const err = validateProfile($('#profName').value, $('#profPhone').value);
+  $('#profErr').textContent = err;
+  if (err) return;
+  saveProfile($('#profName').value, $('#profPhone').value);
+  toast('הפרופיל נשמר');
+});
+
+/* =====================================================================
+   Collection sub-tabs
+   ===================================================================== */
+let collTab = 'cards';
+$('#collTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ctab]');
+  if (!b) return;
+  collTab = b.dataset.ctab;
+  $$('#collTabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['cards', 'sets', 'chart', 'badges'].forEach(t => { $('#ctab-' + t).hidden = t !== collTab; });
+  renderCollection();
+});
+function renderCollTab() {
+  if (collTab === 'sets') renderSets();
+  if (collTab === 'chart') renderChart();
+  if (collTab === 'badges') renderBadges();
+}
+
+/* =====================================================================
+   Sets: completion progress
+   ===================================================================== */
+const cardSetId = (card) => card.setId || String(card.id || '').replace(/-[^-]+$/, '');
+const numKey = (n) => stripZeros(String(n || '')).toUpperCase();
+
+function computeSets(items) {
+  const sets = new Map();
+  for (const it of items) {
+    const c = it.card, id = cardSetId(c);
+    if (!id) continue;
+    if (!sets.has(id)) sets.set(id, { id, name: c.setName || id, total: c.setTotal || 0, src: c.src, releaseDate: c.releaseDate || '', main: new Set(), extra: new Set(), value: 0 });
+    const s = sets.get(id);
+    const n = parseInt(c.number, 10);
+    if (/^\d+$/.test(stripZeros(c.number)) && s.total && n <= s.total) s.main.add(n); else s.extra.add(numKey(c.number));
+    s.value += itemValue(it);
+  }
+  return Array.from(sets.values()).map(s => ({ ...s, pct: s.total ? s.main.size / s.total : 0 }));
+}
+
+function renderSets() {
+  const sets = computeSets(collectionCache).sort((a, b) => b.pct - a.pct || b.main.size - a.main.size);
+  const box = $('#ctab-sets');
+  if (!sets.length) { box.innerHTML = '<div class="panel empty"><div class="big">🧩</div><p class="muted">כשתוסיף קלפים, כאן תראה כמה מכל סט כבר יש לך.</p></div>'; return; }
+  box.innerHTML = `<p class="muted" style="margin-bottom:10px">לחץ על סט כדי לראות אילו קלפים חסרים לך.</p>` + sets.map(s => {
+    const pct = Math.round(s.pct * 100);
+    return `<div class="set-row" data-set="${esc(s.id)}">
+      <div class="s-info">
+        <div class="s-name">${esc(s.name)}</div>
+        <div class="s-sub">${s.main.size} מתוך ${s.total || '?'} קלפים${s.extra.size ? ` · +${s.extra.size} מיוחדים` : ''} · ${fmtILS(s.value)}</div>
+        <div class="progress ${pct >= 100 ? 'done' : ''}"><div style="width:${Math.min(100, pct)}%"></div></div>
+      </div>
+      <div class="s-pct">${pct >= 100 ? '🏆' : pct + '%'}</div>
+    </div>`;
+  }).join('');
+  $$('.set-row', box).forEach(r => r.addEventListener('click', () => openSet(sets.find(s => s.id === r.dataset.set))));
+}
+
+const setCardsCache = {};
+async function fetchSetCards(set) {
+  if (setCardsCache[set.id]) return setCardsCache[set.id];
+  let cards = [];
+  if (set.src !== 'tcgdex') {
+    try {
+      for (let page = 1; page <= 3; page++) {
+        const url = `${PTCG}?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=250&page=${page}&select=${PTCG_SELECT}`;
+        const d = await fetchJSON(url, { headers: ptcgHeaders() }, 30000);
+        cards.push(...(d.data || []).map(normalizePtcg));
+        if (!d.data || d.data.length < 250) break;
+      }
+    } catch (e) { cards = []; }
+  }
+  if (!cards.length) {
+    const d = await fetchJSON(`${TCGDEX}/sets/${encodeURIComponent(set.id)}`, {}, 25000);
+    cards = (d.cards || []).map(c => ({ src: 'tcgdex', brief: true, id: c.id, name: c.name, number: c.localId, img: c.image ? c.image + '/low.png' : '', setName: d.name, setId: set.id }));
+  }
+  const nk = (c) => { const n = parseInt(c.number, 10); return isNaN(n) ? 1e6 : n; };
+  cards.sort((a, b) => nk(a) - nk(b) || String(a.number).localeCompare(String(b.number)));
+  setCardsCache[set.id] = cards;
+  return cards;
+}
+
+async function openSet(set) {
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><button class="close" aria-label="סגור">✕</button>
+    <div class="card-title">${esc(set.name)}</div>
+    <div class="row muted" style="margin-top:14px"><span class="spinner"></span> טוען את כל הקלפים בסט...</div></div>`;
+  const close = () => bg.remove();
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('.close')) close(); });
+  document.body.appendChild(bg);
+  let cards;
+  try { cards = await fetchSetCards(set); }
+  catch (e) { $('.modal', bg).insertAdjacentHTML('beforeend', '<p class="muted">⚠️ אין חיבור למאגר כרגע.</p>'); $('.row', bg).remove(); return; }
+  const owned = collectionCache.filter(it => cardSetId(it.card) === set.id);
+  const ownedItem = (c) => owned.find(it => it.card.id === c.id || numKey(it.card.number) === numKey(c.number));
+  let filter = 'all';
+  const render = () => {
+    const list = cards.filter(c => filter === 'all' || (filter === 'missing') === !ownedItem(c));
+    const missing = cards.filter(c => !ownedItem(c));
+    const missingValue = missing.reduce((s, c) => s + (estimate(c, bestVariant(c), 'NM').ils || 0), 0);
+    $('.modal', bg).innerHTML = `<button class="close" aria-label="סגור">✕</button>
+      <div class="card-title">${esc(set.name)}</div>
+      <div class="card-meta">${set.main.size} מתוך ${set.total || cards.length} · חסרים ${missing.length}${missingValue ? ` · עלות משוערת להשלמה: ${fmtILS(missingValue)}` : ''}</div>
+      <div class="progress ${set.pct >= 1 ? 'done' : ''}"><div style="width:${Math.min(100, Math.round(set.pct * 100))}%"></div></div>
+      <div class="filter-row">
+        <button data-f="all" class="${filter === 'all' ? 'on' : ''}">הכל (${cards.length})</button>
+        <button data-f="missing" class="${filter === 'missing' ? 'on' : ''}">חסרים (${missing.length})</button>
+        <button data-f="have" class="${filter === 'have' ? 'on' : ''}">יש לי (${cards.length - missing.length})</button>
+      </div>
+      <div class="set-grid">${list.map(c => `<div class="set-card ${ownedItem(c) ? '' : 'missing'}" data-id="${esc(c.id)}">
+        <img src="${esc(c.img || '')}" alt="${esc(c.name)}" loading="lazy">${ownedItem(c) ? '<span class="ok">✔</span>' : ''}<span class="n">${esc(c.number)}</span></div>`).join('')}</div>
+      <p class="muted" style="margin-top:10px;font-size:.78rem">לחץ על קלף חסר כדי לראות כמה הוא עולה.</p>`;
+    $$('[data-f]', bg).forEach(b => b.addEventListener('click', () => { filter = b.dataset.f; render(); }));
+    $$('.set-card', bg).forEach(el => el.addEventListener('click', async () => {
+      const c = cards.find(x => x.id === el.dataset.id);
+      const it = ownedItem(c);
+      close();
+      if (it) { openItem(it.uid); return; }
+      let full = c;
+      if (c.brief) { try { full = await tcgdexGet(c.id); } catch (e) { toast('אין חיבור למאגר כרגע'); return; } }
+      captureMode = 'value';
+      showView('capture');
+      $('#capTitle').textContent = '🧩 קלף חסר בסט';
+      $('#capSub').textContent = 'ככה הוא נראה וזה בערך המחיר שלו.';
+      cap.cardCanvas = null; cap.aiFinish = null;
+      showResult(full);
+    }));
+  };
+  render();
+}
+
+/* =====================================================================
+   Value history chart & price movers
+   ===================================================================== */
+const localDay = (t = Date.now()) => new Date(t).toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+function recordHistory(value, count) {
+  const h = lsGet('nitai-history', []);
+  if (!count && !h.length) return;
+  const d = localDay();
+  const last = h[h.length - 1];
+  const v = Math.round(value * 100) / 100;
+  if (last && last.d === d) { if (last.v === v && last.n === count) return; last.v = v; last.n = count; }
+  else h.push({ d, v, n: count });
+  lsSet('nitai-history', h.slice(-730));
+}
+
+function renderChart() {
+  const box = $('#ctab-chart');
+  const h = lsGet('nitai-history', []);
+  const items = collectionCache;
+  const now = items.reduce((s, it) => s + itemValue(it), 0);
+  const deltaHTML = (from, label) => {
+    if (from == null) return '';
+    const d = now - from, pct = from > 0 ? Math.round(d / from * 100) : 0;
+    if (Math.abs(d) < 0.01) return `<div class="delta">= ללא שינוי ${label}</div>`;
+    return `<div class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲ עלה' : '▼ ירד'} ${fmtILS(Math.abs(d))} (${pct > 0 ? '+' : ''}${pct}%) ${label}</div>`;
+  };
+  const monthAgo = localDay(Date.now() - 30 * 864e5);
+  const ref30 = [...h].reverse().find(x => x.d <= monthAgo);
+
+  let chart = '<p class="muted" style="margin-top:12px">📅 הגרף יתמלא עם הזמן – כל יום שבו פותחים את האפליקציה נשמרת נקודה.</p>';
+  if (h.length >= 2) {
+    const W = 600, H = 300, L = 92, R = 16, T = 20, B = 44;
+    const t0 = new Date(h[0].d).getTime(), t1 = new Date(h[h.length - 1].d).getTime();
+    const span = Math.max(1, t1 - t0);
+    const maxV = Math.max(...h.map(x => x.v), 1);
+    const nice = (m) => { const p = Math.pow(10, Math.floor(Math.log10(m))); return Math.ceil(m / p) * p; };
+    const top = nice(maxV * 1.1);
+    const X = (d) => L + (new Date(d).getTime() - t0) / span * (W - L - R);
+    const Y = (v) => T + (1 - v / top) * (H - T - B);
+    const pts = h.map(x => [X(x.d), Y(x.v)]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${Y(0)} L${pts[0][0].toFixed(1)} ${Y(0)} Z`;
+    const grid = [0, 0.25, 0.5, 0.75, 1].map(f => {
+      const v = top * f, y = Y(v);
+      return `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#e1e6f0" stroke-width="1"/>
+        <text x="${L - 8}" y="${y + 7}" text-anchor="end" font-size="20" fill="#6b7489">${v === 0 ? '₪0' : fmtILS(v)}</text>`;
+    }).join('');
+    const fmtD = (d) => new Date(d).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
+    const last = pts[pts.length - 1];
+    chart = `<div class="chart-wrap" id="chartWrap">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="שווי האוסף לאורך זמן">
+        ${grid}
+        <path d="${area}" fill="#2a75bb" fill-opacity="0.1"/>
+        <path d="${line}" fill="none" stroke="#2a75bb" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${last[0]}" cy="${last[1]}" r="4.5" fill="#2a75bb" stroke="#fff" stroke-width="2"/>
+        <text x="${L}" y="${H - 10}" font-size="20" fill="#6b7489">${fmtD(h[0].d)}</text>
+        <text x="${W - R}" y="${H - 10}" font-size="20" fill="#6b7489" text-anchor="end">${fmtD(h[h.length - 1].d)}</text>
+        <line id="chX" y1="${T}" y2="${H - B}" stroke="#1d2c5e" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>
+        <circle id="chDot" r="5" fill="#2a75bb" stroke="#fff" stroke-width="2" visibility="hidden"/>
+        <rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="chHit"/>
+      </svg>
+      <div class="chart-tip" id="chTip" hidden></div>
+    </div>`;
+    setTimeout(() => {
+      const wrap = $('#chartWrap');
+      if (!wrap) return;
+      const svg = $('svg', wrap), tip = $('#chTip'), xl = $('#chX'), dot = $('#chDot');
+      const move = (e) => {
+        const r = svg.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width * W;
+        let bi = 0;
+        pts.forEach((p, i) => { if (Math.abs(p[0] - x) < Math.abs(pts[bi][0] - x)) bi = i; });
+        const [px, py] = pts[bi];
+        xl.setAttribute('x1', px); xl.setAttribute('x2', px); xl.setAttribute('visibility', 'visible');
+        dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.setAttribute('visibility', 'visible');
+        tip.hidden = false;
+        tip.innerHTML = `<b>${fmtILS(h[bi].v)}</b><br>${fmtD(h[bi].d)} · ${h[bi].n} קלפים`;
+        tip.style.left = Math.min(r.width - 60, Math.max(60, px / W * r.width)) + 'px';
+      };
+      const hit = $('#chHit');
+      hit.addEventListener('pointermove', move);
+      hit.addEventListener('pointerdown', move);
+      hit.addEventListener('pointerleave', () => { tip.hidden = true; xl.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
+    });
+  }
+
+  const movers = items.map(it => {
+    const cur = estimate(it.card, it.variant, it.condition).ils;
+    if (cur == null || it.firstValue == null) return null;
+    return { it, cur, d: cur - it.firstValue, pct: it.firstValue > 0 ? (cur - it.firstValue) / it.firstValue : 0 };
+  }).filter(m => m && Math.abs(m.d) >= 0.5);
+  const moverHTML = (m) => `<div class="mover" data-uid="${esc(m.it.uid)}">
+      <img src="${esc(photoSrc(m.it.photo) || m.it.card.img || '')}" alt="" loading="lazy">
+      <div class="m-name">${esc(m.it.card.name)}</div>
+      <div class="m-ch" style="color:${m.d > 0 ? '#15803d' : '#b91c1c'}">${m.d > 0 ? '▲' : '▼'} ${fmtILS(Math.abs(m.d))}<small>${m.d > 0 ? '+' : '−'}${Math.round(Math.abs(m.pct) * 100)}% · עכשיו ${fmtILS(m.cur)}</small></div>
+    </div>`;
+  const ups = movers.filter(m => m.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
+  const downs = movers.filter(m => m.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
+
+  box.innerHTML = `<div class="panel">
+      <div class="muted">שווי האוסף היום</div>
+      <div class="hero-val">${fmtILS(now)}</div>
+      ${h.length ? deltaHTML(h[0].v, 'מאז ההתחלה') : ''}
+      ${ref30 && ref30 !== h[0] ? deltaHTML(ref30.v, 'בחודש האחרון') : ''}
+      ${chart}
+    </div>
+    <div class="panel"><h2>📈 עלו הכי הרבה</h2>${ups.length ? ups.map(moverHTML).join('') : '<p class="muted">עוד אין קלפים שהמחיר שלהם עלה מאז שהוספת אותם.</p>'}</div>
+    <div class="panel"><h2>📉 ירדו הכי הרבה</h2>${downs.length ? downs.map(moverHTML).join('') : '<p class="muted">אף קלף לא ירד – יופי!</p>'}</div>
+    <p class="muted" style="font-size:.75rem">השינוי מחושב מאז שהקלף נוסף לאוסף. המחירים מתעדכנים אוטומטית כל כמה ימים.</p>`;
+  $$('.mover', box).forEach(el => el.addEventListener('click', () => openItem(el.dataset.uid)));
+}
+
+/* Refresh prices of cards not updated for a few days (quietly, in the background). */
+async function autoRefreshPrices() {
+  if (!navigator.onLine) return;
+  const items = await db.all();
+  const stale = items.filter(it => !hasPrices(it.card) || Date.now() - (it.pricedAt || 0) > 3 * 864e5);
+  const done = new Map();
+  let fails = 0;
+  for (const it of stale.slice(0, 40)) {
+    try {
+      if (!done.has(it.card.id)) { done.set(it.card.id, await refetchCard(it.card)); await sleep(400); }
+      const cur = await db.get(it.uid);  // re-read: the user may have edited it meanwhile
+      if (!cur) continue;
+      cur.card = done.get(it.card.id);
+      cur.pricedAt = Date.now();
+      if (cur.firstValue == null) cur.firstValue = estimate(cur.card, cur.variant, cur.condition).ils;
+      await db.put(cur);
+      fails = 0;
+    } catch (e) {
+      if (++fails >= 3) break; // the sources are down – try again next time
+    }
+  }
+  if (done.size && currentView === 'collection') renderCollection();
+}
+
+/* =====================================================================
+   Achievements
+   ===================================================================== */
+const BADGES = [
+  { id: 'first', icon: '🥚', title: 'הקלף הראשון', desc: 'הוסף קלף לאוסף', get: s => [s.total, 1] },
+  { id: 'c10', icon: '🐣', title: 'אספן מתחיל', desc: '10 קלפים באוסף', get: s => [s.total, 10] },
+  { id: 'c50', icon: '🔥', title: 'אספן רציני', desc: '50 קלפים באוסף', get: s => [s.total, 50] },
+  { id: 'c100', icon: '💯', title: 'מאה קלפים!', desc: '100 קלפים באוסף', get: s => [s.total, 100] },
+  { id: 'c250', icon: '👑', title: 'אלוף האספנים', desc: '250 קלפים באוסף', get: s => [s.total, 250] },
+  { id: 'u25', icon: '🌈', title: 'מגוון', desc: '25 קלפים שונים', get: s => [s.unique, 25] },
+  { id: 'holo', icon: '✨', title: 'מבריק', desc: '5 קלפים מבריקים (הולו)', get: s => [s.holo, 5] },
+  { id: 'v50', icon: '💎', title: 'קלף יקר', desc: 'קלף ששווה מעל ₪50', get: s => [Math.floor(s.maxCard), 50] },
+  { id: 'v200', icon: '💰', title: 'אוצר', desc: 'קלף ששווה מעל ₪200', get: s => [Math.floor(s.maxCard), 200] },
+  { id: 'tv500', icon: '🏦', title: 'אוסף שווה', desc: 'אוסף ששווה מעל ₪500', get: s => [Math.floor(s.value), 500] },
+  { id: 'tv2000', icon: '🤑', title: 'אוסף עשיר', desc: 'אוסף ששווה מעל ₪2,000', get: s => [Math.floor(s.value), 2000] },
+  { id: 'vintage', icon: '🦖', title: 'קלף עתיק', desc: 'קלף מלפני שנת 2003', get: s => [s.vintage, 1] },
+  { id: 'sets5', icon: '🗺️', title: 'חוקר', desc: 'קלפים מ-5 סטים שונים', get: s => [s.sets, 5] },
+  { id: 'set50', icon: '🧩', title: 'חצי סט', desc: 'חצי מסט אחד', get: s => [Math.floor(s.bestSetPct * 100), 50] },
+  { id: 'setFull', icon: '🏆', title: 'סט מלא!', desc: 'השלמת סט שלם', get: s => [Math.floor(s.bestSetPct * 100), 100] },
+  { id: 'graded', icon: '🛡️', title: 'קלף מדורג', desc: 'קלף מדורג באוסף', get: s => [s.graded, 1] },
+  { id: 'scan10', icon: '📸', title: 'צלם מקצועי', desc: 'סרקת 10 קלפים', get: s => [s.scans, 10] },
+  { id: 'trade1', icon: '🤝', title: 'טרייד ראשון', desc: 'עשית טרייד', get: s => [s.trades, 1] },
+  { id: 'trade5', icon: '🛒', title: 'סוחר', desc: '5 טריידים', get: s => [s.trades, 5] },
+  { id: 'invite', icon: '📣', title: 'חבר מביא חבר', desc: 'הזמנת חבר לאפליקציה', get: s => [s.invites, 1] },
+];
+
+function badgeStats(items) {
+  const st = lsGet('nitai-stats', {});
+  const sets = computeSets(items);
+  return {
+    total: items.reduce((s, it) => s + it.qty, 0),
+    unique: new Set(items.map(it => it.card.id)).size,
+    value: items.reduce((s, it) => s + itemValue(it), 0),
+    maxCard: Math.max(0, ...items.map(it => estimate(it.card, it.variant, it.condition).ils || 0)),
+    holo: items.filter(it => /holo/i.test(it.variant) || /holo/i.test(it.card.rarity || '')).reduce((s, it) => s + it.qty, 0),
+    vintage: items.filter(it => { const y = parseInt(String(it.card.releaseDate || '').slice(0, 4), 10); return y && y < 2003; }).length,
+    sets: sets.length,
+    bestSetPct: Math.max(0, ...sets.map(x => x.pct)),
+    graded: items.filter(it => /^G\d/.test(it.condition)).length,
+    scans: st.scans || 0, trades: st.trades || 0, invites: st.invites || 0,
+  };
+}
+
+function checkBadges(items) {
+  const s = badgeStats(items);
+  const got = lsGet('nitai-badges', {});
+  const fresh = BADGES.filter(b => { const [c, t] = b.get(s); return c >= t && !got[b.id]; });
+  if (!fresh.length) return;
+  fresh.forEach(b => { got[b.id] = Date.now(); });
+  lsSet('nitai-badges', got);
+  const b = fresh[fresh.length - 1];
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.innerHTML = `<div class="box"><div class="big">${b.icon}</div>
+    <h2 style="margin-top:8px">הישג חדש!</h2>
+    <div style="font-size:1.2rem;font-weight:900;margin-top:4px">${esc(b.title)}</div>
+    <p class="muted" style="margin-top:4px">${esc(b.desc)}${fresh.length > 1 ? ` (ועוד ${fresh.length - 1} הישגים!)` : ''}</p>
+    <button class="btn btn-yellow btn-block" style="margin-top:16px">יש! 🎉</button></div>`;
+  el.addEventListener('click', () => el.remove());
+  document.body.appendChild(el);
+}
+
+function renderBadges() {
+  const s = badgeStats(collectionCache);
+  const got = lsGet('nitai-badges', {});
+  const n = BADGES.filter(b => got[b.id]).length;
+  $('#ctab-badges').innerHTML = `<div class="panel" style="text-align:center">
+      <div class="hero-val" dir="ltr">${n} / ${BADGES.length}</div><div class="muted">הישגים שפתחת</div>
+      <div class="progress"><div style="width:${Math.round(n / BADGES.length * 100)}%"></div></div>
+    </div>
+    <div class="badges">${BADGES.map(b => {
+      const [c, t] = b.get(s);
+      const done = !!got[b.id];
+      return `<div class="badge-card ${done ? 'unlocked' : 'locked'}">
+        <div class="b-ico">${b.icon}</div><div class="b-title">${esc(b.title)}</div><div class="b-desc">${esc(b.desc)}</div>
+        ${done ? '<div class="b-desc" style="color:var(--green);font-weight:700;margin-top:6px">✔ הושג</div>'
+          : `<div class="progress"><div style="width:${Math.min(100, Math.round(c / t * 100))}%"></div></div><div class="b-desc" dir="ltr">${Math.min(c, t)} / ${t}</div>`}
+      </div>`;
+    }).join('')}</div>`;
+}
+
+/* =====================================================================
+   Automatic cloud backup (secret GitHub Gist)
+   Files: pokedex.json (cards without photos + extras) and photos-XX.json buckets,
+   so only changed parts are uploaded and each file stays small.
+   ===================================================================== */
+const cloud = { timer: null, busy: false, restoring: false };
+const GIST_API = 'https://api.github.com/gists';
+const GIST_DESC = 'Pokedex backup (הפוקדקס – גיבוי אוטומטי)';
+const PHOTO_BUCKETS = 16;
+const ghHeaders = () => ({ Authorization: 'Bearer ' + settings.get('ghToken'), Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' });
+function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); }
+
+function cloudStatus(text) {
+  const t = text || (settings.get('ghToken')
+    ? (lsGet('nitai-cloud', {}).lastBackup ? `✅ מופעל · גיבוי אחרון: ${new Date(lsGet('nitai-cloud', {}).lastBackup).toLocaleString('he-IL')}` : '✅ מופעל – ממתין לגיבוי ראשון')
+    : 'כבוי');
+  const el = $('#cloudStatus');
+  if (el) el.textContent = t;
+}
+
+onDbChange = () => {
+  if (cloud.restoring || !settings.get('ghToken')) return;
+  const c = lsGet('nitai-cloud', {}); c.dirty = true; c.rev = (c.rev || 0) + 1; lsSet('nitai-cloud', c);
+  clearTimeout(cloud.timer);
+  cloud.timer = setTimeout(() => cloudBackup().catch(() => {}), 8000);
+};
+
+async function buildBackupFiles() {
+  const items = await db.all();
+  const files = {};
+  const buckets = Array.from({ length: PHOTO_BUCKETS }, () => ({}));
+  for (const it of items) if (it.photo) buckets[parseInt(fnv(it.uid), 36) % PHOTO_BUCKETS][it.uid] = it.photo;
+  files['pokedex.json'] = JSON.stringify({
+    app: 'nitai-pokedex', version: 2, updatedAt: new Date().toISOString(),
+    profile: getProfile(), stats: lsGet('nitai-stats', {}), badges: lsGet('nitai-badges', {}),
+    history: lsGet('nitai-history', []), trade,
+    items: items.map(({ photo, ...rest }) => rest),
+  });
+  buckets.forEach((b, i) => { files[`photos-${String(i).padStart(2, '0')}.json`] = JSON.stringify(b); });
+  return files;
+}
+
+async function ghFetch(url, opts = {}) {
+  const res = await fetch(url, { ...opts, headers: { ...ghHeaders(), ...(opts.headers || {}) } });
+  if (!res.ok) { const e = new Error('GitHub ' + res.status); e.status = res.status; throw e; }
+  return res.json();
+}
+
+async function cloudBackup() {
+  if (!settings.get('ghToken') || cloud.busy || cloud.restoring) return;
+  cloud.busy = true;
+  cloudStatus('☁️ מגבה...');
+  try {
+    const c = lsGet('nitai-cloud', {});
+    const startRev = c.rev || 0;
+    const files = await buildBackupFiles();
+    const hashes = c.hashes || {};
+    const changed = {};
+    for (const [name, content] of Object.entries(files)) {
+      const h = fnv(content);
+      if (!c.gistId || hashes[name] !== h) changed[name] = { content };
+    }
+    if (!c.gistId) {
+      const g = await ghFetch(GIST_API, { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files: changed }) });
+      c.gistId = g.id;
+    } else if (Object.keys(changed).length) {
+      try {
+        await ghFetch(`${GIST_API}/${c.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: changed }) });
+      } catch (e) {
+        if (e.status !== 404) throw e;
+        const g = await ghFetch(GIST_API, { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, { content: v }])) }) });
+        c.gistId = g.id;
+      }
+    }
+    c.hashes = Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fnv(v)]));
+    c.lastBackup = Date.now();
+    const latest = lsGet('nitai-cloud', {});
+    c.rev = latest.rev || 0;
+    c.dirty = (latest.rev || 0) !== startRev; // something changed while uploading
+    lsSet('nitai-cloud', c);
+    cloudStatus();
+    if (c.dirty) { clearTimeout(cloud.timer); cloud.timer = setTimeout(() => cloudBackup().catch(() => {}), 3000); }
+  } catch (e) {
+    console.warn('cloud backup', e);
+    cloudStatus(e.status === 401 ? '❌ המפתח לא תקין או שפג תוקפו' : '⚠️ הגיבוי נכשל (אין אינטרנט?) – ננסה שוב בפעם הבאה');
+    throw e;
+  } finally {
+    cloud.busy = false;
+  }
+}
+
+async function findBackupGist() {
+  const c = lsGet('nitai-cloud', {});
+  if (c.gistId) {
+    try { return await ghFetch(`${GIST_API}/${c.gistId}`); } catch (e) { if (e.status !== 404) throw e; }
+  }
+  const list = await ghFetch(`${GIST_API}?per_page=100`);
+  const g = list.find(x => x.description === GIST_DESC && x.files && x.files['pokedex.json']);
+  return g ? ghFetch(`${GIST_API}/${g.id}`) : null;
+}
+
+async function cloudRestore() {
+  const g = await findBackupGist();
+  if (!g) { toast('לא נמצא גיבוי בענן'); return false; }
+  const read = async (f) => (f.truncated ? (await fetch(f.raw_url)).text() : f.content);
+  const meta = JSON.parse(await read(g.files['pokedex.json']));
+  const photos = {};
+  for (const [name, f] of Object.entries(g.files)) {
+    if (/^photos-\d+\.json$/.test(name)) Object.assign(photos, JSON.parse(await read(f)));
+  }
+  cloud.restoring = true;
+  try {
+    await db.clear();
+    for (const it of meta.items || []) await db.put({ ...it, photo: photos[it.uid] || null });
+    if (meta.profile) lsSet('nitai-profile', meta.profile);
+    if (meta.stats) lsSet('nitai-stats', meta.stats);
+    if (meta.badges) lsSet('nitai-badges', meta.badges);
+    if (meta.history) lsSet('nitai-history', meta.history);
+    if (meta.trade) { trade.give = meta.trade.give || []; trade.get = meta.trade.get || []; saveTrade(); }
+    const files = await buildBackupFiles();
+    lsSet('nitai-cloud', { gistId: g.id, lastBackup: Date.now(), dirty: false, hashes: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fnv(v)])) });
+  } finally {
+    cloud.restoring = false;
+  }
+  applyProfile();
+  $$('.welcome').forEach(w => w.remove());
+  cloudStatus();
+  toast(`☁️ שוחזרו ${(meta.items || []).length} קלפים מהענן`);
+  return true;
+}
+
+$('#btnCloudSave').addEventListener('click', async () => {
+  settings.set('ghToken', $('#setGhToken').value.trim());
+  if (!settings.get('ghToken')) { cloudStatus(); toast('הגיבוי בענן כובה'); return; }
+  try {
+    await ghFetch(GIST_API + '?per_page=1');
+  } catch (e) {
+    cloudStatus(e.status === 401 ? '❌ המפתח לא תקין' : '⚠️ לא הצלחתי להתחבר ל-GitHub');
+    return;
+  }
+  const items = await db.all();
+  if (!items.length) {
+    const g = await findBackupGist().catch(() => null);
+    if (g && confirm('נמצא גיבוי קיים בענן. לשחזר אותו לטלפון הזה?')) { await cloudRestore(); renderCollection(); return; }
+  }
+  try { await cloudBackup(); toast('☁️ הגיבוי האוטומטי מופעל!'); } catch (e) {}
+});
+$('#btnCloudNow').addEventListener('click', async () => {
+  if (!settings.get('ghToken')) { toast('קודם צריך להכניס מפתח GitHub'); return; }
+  try { await cloudBackup(); toast('☁️ גובה בהצלחה'); } catch (e) {}
+});
+$('#btnCloudRestore').addEventListener('click', async () => {
+  if (!settings.get('ghToken')) { toast('קודם צריך להכניס מפתח GitHub'); return; }
+  if (!confirm('לשחזר מהענן? האוסף שבטלפון יוחלף באוסף מהגיבוי.')) return;
+  try { await cloudRestore(); } catch (e) { cloudStatus(e.status === 401 ? '❌ המפתח לא תקין' : '⚠️ השחזור נכשל'); }
+});
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+const APP_VERSION = '2026.10.21-6';
+window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
+window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
+$('#appVersion').textContent = 'גרסה ' + APP_VERSION;
+renderRatesInfo();
+refreshRates().then(() => { if (currentView === 'collection') renderCollection(); });
+applyProfile();
+if (!getProfile() || !getProfile().consent) showWelcome();
+else sendSignup();
+window.addEventListener('online', () => sendSignup());
+renderCollection();
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+setTimeout(() => autoRefreshPrices().catch(() => {}), 5000);
+if (settings.get('ghToken') && lsGet('nitai-cloud', {}).dirty) setTimeout(() => cloudBackup().catch(() => {}), 3000);
+
+/* ---- Install as an app on the phone ---- */
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installPrompt = null;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch((e) => console.warn('sw', e));
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  $('#btnInstall').hidden = false;
+});
+window.addEventListener('appinstalled', () => { $('#btnInstall').hidden = true; toast('האפליקציה הותקנה! 🎉'); });
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInAppBrowser = /WhatsApp|FBAN|FBAV|Instagram|Line\/|; wv\)/i.test(navigator.userAgent);
+if (!isStandalone()) $('#btnInstall').hidden = false;
+$('#btnInstall').addEventListener('click', async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice.catch(() => null);
+    if (choice && choice.outcome === 'accepted') $('#btnInstall').hidden = true;
+    installPrompt = null;
+    return;
+  }
+  const steps = isInAppBrowser ? `
+      <li>הדף נפתח בתוך וואטסאפ – משם אי אפשר להתקין</li>
+      <li>לחץ על <b>⋮</b> (שלוש נקודות) למעלה</li>
+      <li>בחר <b>"פתח ב-Chrome"</b> / "פתח בדפדפן"</li>
+      <li>ב-Chrome לחץ שוב על <b>📲 התקן</b></li>` : isIOS ? `
+      <li>פתח את הדף הזה ב-<b>Safari</b></li>
+      <li>לחץ על כפתור השיתוף <b>⬆️</b> בתחתית המסך</li>
+      <li>בחר <b>"הוסף למסך הבית"</b></li>
+      <li>לחץ <b>"הוסף"</b> – והפוקדקס יופיע עם אייקון כמו אפליקציה רגילה!</li>` : `
+      <li>ודא שהדף פתוח ב-<b>Chrome</b></li>
+      <li>לחץ על <b>⋮</b> (שלוש נקודות) בפינה העליונה</li>
+      <li>בחר <b>"התקנת אפליקציה"</b> או <b>"הוספה למסך הבית"</b></li>
+      <li>לחץ <b>"התקנה"</b> – והפוקדקס יופיע עם אייקון כמו אפליקציה רגילה!</li>`;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+    <button class="close" aria-label="סגור">✕</button>
+    <h2 style="margin-bottom:12px">📲 התקנה בטלפון</h2>
+    <ol style="padding-right:20px;line-height:2">${steps}</ol>
+  </div>`;
+  const close = () => bg.remove();
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('.close')) close(); });
+  document.body.appendChild(bg);
+});
+</script>
+</body>
+</html>

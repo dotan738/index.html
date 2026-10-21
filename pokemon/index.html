@@ -493,6 +493,16 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+.auto-toggle {
+  display: flex; gap: 10px; align-items: center; margin-top: 10px; padding: 10px 12px; background: #fff; border-radius: 14px;
+  box-shadow: var(--shadow); font-size: 0.85rem; cursor: pointer;
+}
+.auto-toggle input { width: 22px; height: 22px; flex: none; accent-color: var(--red); }
+.auto-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 12px 14px;
+  background: #e3f7ea; color: #145c33; border: 2px solid #4cc27a; border-radius: 16px; font-size: 0.92rem; animation: viewIn .3s ease-out;
+}
+.auto-banner .btn { padding: 7px 12px; font-size: 0.82rem; flex: none; }
 </style>
 </head>
 <body>
@@ -553,6 +563,10 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
   <section id="view-capture" hidden>
     <div class="cap-title" id="capTitle"></div>
     <div class="muted" id="capSub"></div>
+    <label class="auto-toggle" id="autoAddWrap" hidden>
+      <input type="checkbox" id="autoAdd">
+      <span>⚡ <b>הוספה אוטומטית</b> – כשאני בטוח בזיהוי, הקלף נכנס לאוסף בלי ללחוץ כלום</span>
+    </label>
 
     <!-- Step: camera -->
     <div id="stepCamera">
@@ -1699,6 +1713,8 @@ function go(view) {
     $('#capSub').textContent = view === 'add'
       ? 'צלם את הקלף – אני אסדר את התמונה, אזהה את הקלף ואוסיף אותו לאוסף שלך.'
       : 'צלם קלף ואני אגיד לך בערך כמה הוא שווה לפי מחירי השוק.';
+    $('#autoAddWrap').hidden = view !== 'add';
+    $('#autoAdd').checked = autoAddOn();
     startCaptureFlow();
   } else {
     showView(view);
@@ -1709,9 +1725,17 @@ function go(view) {
   $$('.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.go === view));
 }
 
+const autoAddOn = () => settings.get('autoAdd') !== 'off';
+$('#autoAdd').addEventListener('change', (e) => {
+  settings.set('autoAdd', e.target.checked ? 'on' : 'off');
+  toast(e.target.checked ? '⚡ הוספה אוטומטית הופעלה' : 'הוספה אוטומטית כובתה');
+});
+const autoMode = () => captureMode === 'add' && autoAddOn();
+
 /** Open the scanner to add a card to one side of the trade. */
 function goTradeScan(side, manualQuery) {
   captureMode = 'trade';
+  $('#autoAddWrap').hidden = true;
   tradeSide = side;
   showView('capture');
   $('#capTitle').textContent = side === 'get' ? '🤝 סריקת קלף של החבר' : '🤝 סריקת קלף שאני נותן';
@@ -1877,7 +1901,14 @@ function beginAdjust(canvas, initialQuad) {
     let q = null;
     try { q = detectCardQuad(canvas); } catch (e) { console.warn('detect', e); }
     if (cap.userMoved) { note.textContent = ''; return; }
-    if (q) { cap.quad = q; drawQuad(); note.textContent = '✨ מצאתי את הקלף! אפשר לתקן את הנקודות אם צריך.'; }
+    if (q && autoMode()) {
+      cap.quad = q; drawQuad();
+      note.textContent = '✨ מצאתי את הקלף! ממשיך אוטומטית... (גע בנקודה כדי לתקן)';
+      setTimeout(() => {
+        if (cap.srcCanvas === token && !cap.userMoved && !$('#stepAdjust').hidden) $('#btnAdjustOk').click();
+        else if (cap.userMoved) note.textContent = 'תקן את הנקודות ולחץ "המשך".';
+      }, 1300);
+    } else if (q) { cap.quad = q; drawQuad(); note.textContent = '✨ מצאתי את הקלף! אפשר לתקן את הנקודות אם צריך.'; }
     else note.textContent = 'גרור את 4 הנקודות לפינות הקלף ולחץ "המשך".';
   }, 50);
 }
@@ -2049,6 +2080,11 @@ async function runSearch(parsed) {
     </div>`).join('');
   $$('.cand', grid).forEach(el => el.addEventListener('click', () => showResult(shown[+el.dataset.i].card)));
   $('#candNote').textContent = `נמצאו ${cands.length} קלפים אפשריים. לחץ על הקלף שנראה בדיוק כמו שלך (שים לב לסמל הסט ולמספר בתחתית).`;
+  if (autoMode() && cap.cardCanvas && !cap.manualSearch) {
+    const sure = confidentMatch(ranked, parsed);
+    if (sure) showResult(sure, { auto: true });
+    else $('#candTitle').textContent = '🤔 לא הייתי בטוח מספיק – בחר את הקלף שלך:';
+  }
 }
 
 /* ---- Result ---- */
@@ -2097,8 +2133,22 @@ function valueBoxHTML(est) {
     ${est.graded ? `<div class="range" style="margin-top:6px">🛡️ מחיר קלף מדורג משתנה מאוד – כדאי לבדוק מכירות של "PSA ${est.graded}" ב-eBay (קישור למטה).</div>` : ''}`;
 }
 
+/** The best candidate, only when name, number and set all agree and it clearly beats the rest. */
+function confidentMatch(ranked, parsed) {
+  if (!ranked.length || !parsed) return null;
+  const best = ranked[0], c = best.card;
+  const n = stripZeros(parsed.number || '').toUpperCase();
+  const numOk = !!n && stripZeros(c.number).toUpperCase() === n;
+  const nameOk = !!parsed.name && nameSimilarity(parsed.name, c.name) >= 0.8;
+  const setOk = (parsed.total && parseInt(parsed.total, 10) === c.setTotal) ||
+    (parsed.setName && nameSimilarity(parsed.setName, c.setName) > 0.8);
+  const second = ranked[1];
+  const clear = !second || best.score - second.score >= 1;
+  return numOk && nameOk && setOk && clear ? c : null;
+}
+
 let resultSeq = 0;
-async function showResult(card) {
+async function showResult(card, opts = {}) {
   const seq = ++resultSeq;
   if (!hasPrices(card) && card.src !== 'tcgdex') {
     showStep('stepResult');
@@ -2108,10 +2158,10 @@ async function showResult(card) {
     card = await enrichPrices(card);
     if (seq !== resultSeq) return;
   }
-  renderResult(card);
+  renderResult(card, opts);
 }
 
-function renderResult(card) {
+function renderResult(card, opts = {}) {
   cap.selected = card;
   showStep('stepResult');
   const box = $('#stepResult');
@@ -2119,6 +2169,8 @@ function renderResult(card) {
   let condition = 'NM';
   let qty = 1;
   box.innerHTML = `
+    ${opts.auto ? `<div class="auto-banner" id="autoBanner"><span>✅ <b>${esc(card.name)}</b> נוסף אוטומטית לאוסף!</span>
+      <button class="btn btn-ghost" id="btnUndoAuto">↩️ בטל</button></div>` : ''}
     <div class="panel">
       <div class="result-imgs">
         <figure>${cap.cardCanvas ? '<canvas id="resMine"></canvas>' : `<img src="${esc(card.img || card.imgLarge)}" alt="">`}<figcaption>${cap.cardCanvas ? 'הצילום שלך' : 'תמונת הקלף'}</figcaption></figure>
@@ -2150,7 +2202,7 @@ function renderResult(card) {
         ${captureMode === 'add' ? '⭐ הוסף לאוסף שלי' : '⭐ הוסף גם לאוסף שלי'}</button>`}
       <div class="row" style="margin-top:10px">
         <button class="btn btn-ghost grow" id="btnResBack">↩️ זה לא הקלף</button>
-        <button class="btn btn-ghost grow" id="btnResNext">📷 קלף הבא</button>
+        <button class="btn ${opts.auto ? 'btn-red' : 'btn-ghost'} grow" id="btnResNext">📷 ${opts.auto ? 'סרוק את הקלף הבא' : 'קלף הבא'}</button>
       </div>
     </div>`;
   if (cap.cardCanvas) {
@@ -2160,11 +2212,24 @@ function renderResult(card) {
   }
   const update = () => { $('#resValue').innerHTML = valueBoxHTML(estimate(card, variant, condition)); };
   update();
-  $('#resVariant').addEventListener('change', (e) => { variant = e.target.value; update(); });
-  $('#resCond').addEventListener('change', (e) => { condition = e.target.value; update(); });
-  $('#qtyMinus').addEventListener('click', () => { qty = Math.max(1, qty - 1); $('#qtyVal').textContent = qty; });
-  $('#qtyPlus').addEventListener('click', () => { qty++; $('#qtyVal').textContent = qty; });
-  $('#btnResBack').addEventListener('click', () => showStep('stepIdentify'));
+  // after a card was added (by hand or automatically) – keep the saved copy in sync with the choices here
+  let added = null; // { uid, qty }
+  const undo = async () => {
+    if (!added) return;
+    const it = await db.get(added.uid);
+    if (it) { if (it.qty > added.qty) { it.qty -= added.qty; await db.put(it); } else await db.del(it.uid); }
+    added = null;
+  };
+  const doAdd = async () => {
+    const it = await addToCollection(card, variant, condition, qty, cap.cardCanvas);
+    added = { uid: it.uid, qty };
+  };
+  const resync = async () => { if (added) { await undo(); await doAdd(); } };
+  $('#resVariant').addEventListener('change', (e) => { variant = e.target.value; update(); resync(); });
+  $('#resCond').addEventListener('change', (e) => { condition = e.target.value; update(); resync(); });
+  $('#qtyMinus').addEventListener('click', () => { qty = Math.max(1, qty - 1); $('#qtyVal').textContent = qty; resync(); });
+  $('#qtyPlus').addEventListener('click', () => { qty++; $('#qtyVal').textContent = qty; resync(); });
+  $('#btnResBack').addEventListener('click', async () => { if (added) { await undo(); toast('ההוספה בוטלה'); } showStep('stepIdentify'); });
   $('#btnResNext').addEventListener('click', () => startCaptureFlow());
   if (captureMode === 'trade') {
     $('#btnAddToTrade').addEventListener('click', () => {
@@ -2176,19 +2241,35 @@ function renderResult(card) {
     });
     return;
   }
-  $('#btnAddToColl').addEventListener('click', async (e) => {
-    e.target.disabled = true;
+  const btn = $('#btnAddToColl');
+  const markAdded = () => { btn.disabled = true; btn.textContent = '✔ נוסף לאוסף'; };
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
     try {
-      await addToCollection(card, variant, condition, qty, cap.cardCanvas);
+      await doAdd();
       toast(`✨ ${card.name} נוסף לאוסף!`);
       confetti();
-      e.target.textContent = '✔ נוסף לאוסף';
+      markAdded();
     } catch (err) {
       console.error(err);
       toast('שגיאה בשמירה 😕');
-      e.target.disabled = false;
+      btn.disabled = false;
     }
   });
+  if (opts.auto) {
+    markAdded();
+    doAdd().then(() => confetti()).catch((err) => {
+      console.error(err);
+      toast('שגיאה בשמירה 😕');
+      $('#autoBanner').remove();
+      btn.disabled = false; btn.textContent = '⭐ הוסף לאוסף שלי';
+    });
+    $('#btnUndoAuto').addEventListener('click', async () => {
+      await undo();
+      $('#autoBanner').innerHTML = '<span>↩️ ההוספה בוטלה</span>';
+      btn.disabled = false; btn.textContent = '⭐ הוסף לאוסף שלי';
+    });
+  }
 }
 
 function photoDataUrl(canvas) {
@@ -3328,7 +3409,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-7';
+const APP_VERSION = '2026.10.21-8';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

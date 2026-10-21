@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root {
   --red: #e3350d;
@@ -283,7 +283,7 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
 .verdict.fair { background: #e8f0fb; color: #1d3f72; border: 2px solid #6d9de0; }
 .verdict.bad { background: #fff1d6; color: #7a4a00; border: 2px solid #f0b13c; }
 .verdict.terrible { background: #fde4e0; color: #8a1d0c; border: 2px solid #ec6b55; }
-.verdict.none { background: #fff; color: var(--muted); border: 2px dashed var(--line); }
+.verdict.none, .verdict.noprice { background: #fff; color: var(--muted); border: 2px dashed var(--line); }
 .scale { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin: 12px 0 4px; background: #e6e9f0; }
 .scale .s-give { background: var(--red); }
 .scale .s-get { background: var(--blue); }
@@ -384,7 +384,6 @@ body {
     radial-gradient(circle at 100% 0, rgba(255, 203, 5, 0.18), transparent 40%),
     radial-gradient(circle at 0 30%, rgba(42, 117, 187, 0.10), transparent 45%),
     var(--bg);
-  background-attachment: fixed;
 }
 .app-header {
   background: linear-gradient(120deg, #ff4f2b 0%, var(--red) 45%, var(--red-dark) 100%);
@@ -846,10 +845,12 @@ const db = (() => {
       if (r) r.onsuccess = () => { result = r.result; };
       t.oncomplete = () => resolve(result);
       t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('transaction aborted'));
     });
   }
   return {
     all: () => tx('readonly', s => s.getAll()),
+    get: (uid) => tx('readonly', s => s.get(uid)),
     put: (item) => tx('readwrite', s => s.put(item)).then(r => { onDbChange(); return r; }),
     del: (uid) => tx('readwrite', s => s.delete(uid)).then(r => { onDbChange(); return r; }),
     clear: () => tx('readwrite', s => s.clear()).then(r => { onDbChange(); return r; }),
@@ -897,7 +898,7 @@ function normalizePtcg(c) {
   const tp = c.tcgplayer && c.tcgplayer.prices;
   if (tp) {
     for (const [v, p] of Object.entries(tp)) {
-      if (!p) continue;
+      if (!p || !(num(p.low) || num(p.mid) || num(p.market))) continue; // variant listed without any price
       tcg[v] = { low: num(p.low), mid: num(p.mid), high: num(p.high), market: num(p.market) };
     }
   }
@@ -948,7 +949,7 @@ function normalizeTcgdex(c) {
   if (pr.tcgplayer) {
     updated = pr.tcgplayer.updated || '';
     for (const [k, p] of Object.entries(pr.tcgplayer)) {
-      if (!p || typeof p !== 'object') continue;
+      if (!p || typeof p !== 'object' || !(num(p.lowPrice) || num(p.midPrice) || num(p.marketPrice))) continue;
       const v = TCGDEX_VARIANT_MAP[k] || k;
       tcg[v] = { low: num(p.lowPrice), mid: num(p.midPrice), high: num(p.highPrice), market: num(p.marketPrice) };
     }
@@ -1003,8 +1004,39 @@ async function tcgdexSearch({ name, number, total }) {
 }
 
 async function refetchCard(card) {
-  const fresh = card.src === 'tcgdex' ? await tcgdexGet(card.id) : await ptcgGet(card.id);
-  return enrichPrices(fresh);
+  if (card.src === 'tcgdex') return tcgdexGet(card.id);
+  let fresh;
+  try { fresh = await ptcgGet(card.id); }
+  catch (e) { fresh = { ...card, prices: { tcg: {}, cm: null, tcgUrl: card.prices && card.prices.tcgUrl, cmUrl: card.prices && card.prices.cmUrl } }; }
+  const enriched = await enrichPrices(fresh);
+  if (!hasPrices(enriched) && hasPrices(card)) return card; // keep the last known prices rather than losing them
+  return enriched;
+}
+
+/* TCGdex set list (cached) – used to find the exact same card by set + number. */
+let tcgdexSetsP = null;
+function tcgdexSets() {
+  if (!tcgdexSetsP) {
+    tcgdexSetsP = fetchJSON(`${TCGDEX}/sets`, {}, 20000);
+    tcgdexSetsP.catch(() => { tcgdexSetsP = null; });
+  }
+  return tcgdexSetsP;
+}
+async function tcgdexFindExact(card) {
+  const sets = await tcgdexSets();
+  const cands = (Array.isArray(sets) ? sets : [])
+    .map(st => ({ st, sim: nameSimilarity(st.name, card.setName), sameCount: card.setTotal && st.cardCount && st.cardCount.official === card.setTotal }))
+    .filter(x => x.sim > 0.85 || (x.sameCount && x.sim > 0.5))
+    .sort((a, b) => (b.sim + (b.sameCount ? 0.5 : 0)) - (a.sim + (a.sameCount ? 0.5 : 0)))
+    .slice(0, 3);
+  const raw = String(card.number || '');
+  const nums = [...new Set([raw, /^\d+$/.test(raw) ? raw.padStart(3, '0') : raw, stripZeros(raw)])];
+  for (const { st } of cands) {
+    for (const n of nums) {
+      try { return await tcgdexGet(`${st.id}-${n}`); } catch (e) { /* try next form */ }
+    }
+  }
+  return null;
 }
 
 const hasPrices = (card) => {
@@ -1021,7 +1053,8 @@ async function enrichPrices(card) {
   if (!card || hasPrices(card) || card.src === 'tcgdex') return card;
   if (priceCache.has(card.id)) return { ...card, prices: priceCache.get(card.id) };
   try {
-    const found = await tcgdexSearch({ name: card.name, number: card.number, total: card.setTotal });
+    const exact = await tcgdexFindExact(card).catch(() => null);
+    const found = exact && hasPrices(exact) ? [exact] : await tcgdexSearch({ name: card.name, number: card.number, total: card.setTotal });
     const n = stripZeros(card.number).toUpperCase();
     const match = found.find(c => stripZeros(c.number).toUpperCase() === n && hasPrices(c) &&
       ((card.setTotal && c.setTotal === card.setTotal) || nameSimilarity(c.setName, card.setName) > 0.8));
@@ -1388,14 +1421,23 @@ function ocrProgress(m) {
   if (!ocrProgressEl || !m || typeof m.progress !== 'number') return;
   if (/loading|initializ/i.test(m.status || '')) ocrProgressEl.textContent = `מוריד את קורא הטקסט... ${Math.round(m.progress * 100)}%`;
 }
+function resetOcrWorker() {
+  const p = ocrWorkerP;
+  ocrWorkerP = null;
+  if (p) p.then(w => w.terminate()).catch(() => {});
+}
 function getOcrWorker() {
   if (ocrWorkerP) return ocrWorkerP;
+  const creating = (async () => {
+    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 40000);
+    return await window.Tesseract.createWorker('eng', 1, { logger: (m) => ocrProgress(m) });
+  })();
   ocrWorkerP = Promise.race([
-    (async () => {
-      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 40000);
-      return await window.Tesseract.createWorker('eng', 1, { logger: (m) => ocrProgress(m) });
-    })(),
-    sleep(40000).then(() => { throw new Error('OCR load timeout'); }),
+    creating,
+    sleep(40000).then(() => {
+      creating.then(w => w.terminate()).catch(() => {}); // don't leave a half-loaded worker behind
+      throw new Error('OCR load timeout');
+    }),
   ]);
   ocrWorkerP.catch(() => { ocrWorkerP = null; });
   return ocrWorkerP;
@@ -1630,6 +1672,7 @@ function goTradeScan(side, manualQuery) {
 }
 
 function showView(name) {
+  resultSeq++;
   if (currentView === 'capture' && name !== 'capture') stopCamera();
   currentView = name;
   ['collection', 'capture', 'trade', 'settings'].forEach(v => { $('#view-' + v).hidden = v !== name; });
@@ -1660,6 +1703,7 @@ function showStep(id) {
 }
 
 async function startCaptureFlow() {
+  resultSeq++;
   if (!settings.get('anthropicKey')) setTimeout(() => getOcrWorker().catch(() => {}), 1500);
   cap.srcCanvas = cap.quad = cap.cardCanvas = cap.parsed = cap.selected = cap.aiFinish = null;
   showStep('stepCamera');
@@ -1760,7 +1804,12 @@ function beginAdjust(canvas, initialQuad) {
   cap.quad = initialQuad.map(p => ({ ...p }));
   showStep('stepAdjust');
   const img = $('#adjustImg');
-  img.src = canvas.toDataURL('image/jpeg', 0.85);
+  if (img.dataset.url) { URL.revokeObjectURL(img.dataset.url); img.dataset.url = ''; }
+  canvas.toBlob((b) => {
+    if (!b || cap.srcCanvas !== canvas) return;
+    img.dataset.url = URL.createObjectURL(b);
+    img.src = img.dataset.url;
+  }, 'image/jpeg', 0.85);
   const svg = $('#adjustSvg');
   svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
   svg.setAttribute('preserveAspectRatio', 'none');
@@ -1795,7 +1844,7 @@ function drawQuad() {
 
 (function setupDrag() {
   const svg = $('#adjustSvg');
-  let drag = -1;
+  let drag = -1, raf = 0;
   const toImg = (e) => {
     const r = svg.getBoundingClientRect();
     return {
@@ -1819,7 +1868,7 @@ function drawQuad() {
   svg.addEventListener('pointermove', (e) => {
     if (drag < 0) return;
     cap.quad[drag] = toImg(e);
-    drawQuad();
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawQuad(); });
   });
   const end = () => { drag = -1; };
   svg.addEventListener('pointerup', end);
@@ -1891,7 +1940,7 @@ async function identify() {
     ocrProgressEl = $('#identStatus li:last-child span:last-child');
     $('#candTitle').textContent = 'לא רוצה לחכות? כתוב את שם הקלף (באנגלית) ולחץ חפש ⬇️';
     try {
-      parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(50000).then(() => { throw new Error('OCR timeout'); })]);
+      parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(50000).then(() => { resetOcrWorker(); throw new Error('OCR timeout'); })]);
       const bits = [parsed.name, parsed.number && ('#' + parsed.number + (parsed.total ? '/' + parsed.total : ''))].filter(Boolean).join(' ');
       st.done(bits ? `קראתי: ${bits}` : 'לא הצלחתי לקרוא את השם – אפשר להקליד למטה', !!bits);
     } catch (e) {
@@ -1942,7 +1991,7 @@ async function runSearch(parsed) {
   grid.innerHTML = shown.map((x, i) => `
     <div class="cand ${i === 0 ? 'best' : ''}" data-i="${i}">
       ${i === 0 ? '<span class="badge">הכי מתאים</span>' : ''}
-      <img src="${esc(x.card.img || '')}" alt="${esc(x.card.name)}" loading="lazy">
+      <img src="${esc(x.card.img || '')}" alt="${esc(x.card.name)}" crossorigin="anonymous" loading="lazy">
       <div class="cap"><b>${esc(x.card.name)}</b>${esc(x.card.setName)} · #${esc(x.card.number)}${x.card.setTotal ? '/' + esc(x.card.setTotal) : ''}</div>
     </div>`).join('');
   $$('.cand', grid).forEach(el => el.addEventListener('click', () => showResult(shown[+el.dataset.i].card)));
@@ -2000,7 +2049,9 @@ async function showResult(card) {
   const seq = ++resultSeq;
   if (!hasPrices(card) && card.src !== 'tcgdex') {
     showStep('stepResult');
-    $('#stepResult').innerHTML = '<div class="panel row muted"><span class="spinner"></span> מחפש מחיר במקור נוסף...</div>';
+    $('#stepResult').innerHTML = `<div class="panel"><div class="row muted"><span class="spinner"></span> מחפש מחיר במקור נוסף...</div>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px" id="btnEnrichCancel">↩️ חזרה</button></div>`;
+    $('#btnEnrichCancel').addEventListener('click', () => { resultSeq++; showStep('stepIdentify'); });
     card = await enrichPrices(card);
     if (seq !== resultSeq) return;
   }
@@ -2017,8 +2068,8 @@ function renderResult(card) {
   box.innerHTML = `
     <div class="panel">
       <div class="result-imgs">
-        <figure>${cap.cardCanvas ? '<canvas id="resMine"></canvas>' : `<img src="${esc(card.imgLarge || card.img)}" alt="">`}<figcaption>${cap.cardCanvas ? 'הצילום שלך' : 'תמונת הקלף'}</figcaption></figure>
-        <figure><img src="${esc(card.imgLarge || card.img)}" alt="${esc(card.name)}"><figcaption>הקלף במאגר</figcaption></figure>
+        <figure>${cap.cardCanvas ? '<canvas id="resMine"></canvas>' : `<img src="${esc(card.img || card.imgLarge)}" alt="">`}<figcaption>${cap.cardCanvas ? 'הצילום שלך' : 'תמונת הקלף'}</figcaption></figure>
+        <figure><img src="${esc(card.img || card.imgLarge)}" ${card.imgLarge && card.img ? `srcset="${esc(card.img)} 1x, ${esc(card.imgLarge)} 2x"` : ''} alt="${esc(card.name)}"><figcaption>הקלף במאגר</figcaption></figure>
       </div>
       <div style="margin-top:14px">
         <div class="card-title">${esc(card.name)}</div>
@@ -2119,6 +2170,25 @@ async function addToCollection(card, variant, condition, qty, canvas) {
 /* =====================================================================
    Collection view
    ===================================================================== */
+// Photos are stored as data: URLs. Putting hundreds of them straight into the HTML is slow,
+// so each one is turned into a short blob: URL once and reused.
+const photoUrlCache = new Map();
+function photoSrc(photo) {
+  if (!photo || !photo.startsWith('data:')) return photo || '';
+  const key = photo.length + ':' + photo.slice(-48);
+  let u = photoUrlCache.get(key);
+  if (!u) {
+    try {
+      const [head, b64] = photo.split(',');
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      u = URL.createObjectURL(new Blob([bytes], { type: (head.match(/:(.*?);/) || [])[1] || 'image/jpeg' }));
+    } catch (e) { u = photo; }
+    photoUrlCache.set(key, u);
+  }
+  return u;
+}
 let collectionCache = [];
 const itemValue = (it) => { const e = estimate(it.card, it.variant, it.condition); return e.ils == null ? 0 : e.ils * it.qty; };
 
@@ -2151,7 +2221,7 @@ async function renderCollection() {
   });
   $('#collGrid').innerHTML = list.map(it => {
     const e = estimate(it.card, it.variant, it.condition);
-    const img = it.photo || it.card.img || '';
+    const img = photoSrc(it.photo) || it.card.img || '';
     const shiny = /holo/i.test(it.variant) || /holo|ultra|secret|illustration|hyper|rainbow|ex\b|vmax|vstar/i.test(it.card.rarity || '');
     return `<div class="tile ${shiny ? 'shiny' : ''}" data-uid="${esc(it.uid)}">
       ${it.qty > 1 ? `<span class="qty">×${it.qty}</span>` : ''}
@@ -2175,7 +2245,8 @@ function openItem(uid) {
   if (!it) return;
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
-  const close = () => { bg.remove(); renderCollection(); };
+  let changed = false;
+  const close = () => { bg.remove(); if (changed) renderCollection(); };
   bg.addEventListener('click', (e) => { if (e.target === bg) close(); });
   let showMine = !!it.photo;
   const render = () => {
@@ -2185,7 +2256,7 @@ function openItem(uid) {
       <div class="card-title">${esc(it.card.name)}</div>
       <div class="card-meta">${esc(it.card.setName)} · #${esc(it.card.number)}${it.card.setTotal ? '/' + esc(it.card.setTotal) : ''}${it.card.rarity ? ' · ' + esc(it.card.rarity) : ''}</div>
       ${it.photo ? `<div class="img-toggle"><button data-img="mine" class="${showMine ? 'on' : ''}">הצילום שלי</button><button data-img="official" class="${showMine ? '' : 'on'}">תמונה רשמית</button></div>` : '<div style="height:10px"></div>'}
-      <img class="main-img" src="${esc(showMine ? it.photo : (it.card.imgLarge || it.card.img))}" alt="">
+      <img class="main-img" src="${esc(showMine ? photoSrc(it.photo) : it.card.img)}" ${showMine || !it.card.imgLarge ? '' : `srcset="${esc(it.card.img)} 1x, ${esc(it.card.imgLarge)} 2x"`} alt="">
       <div class="value-box">${valueBoxHTML(e)}${it.qty > 1 && e.ils != null ? `<div class="range" style="margin-top:4px">סה"כ ל-${it.qty} קלפים: <b>${fmtILS(e.ils * it.qty)}</b></div>` : ''}</div>
       <div class="panel">
         <div class="two-col">
@@ -2206,21 +2277,22 @@ function openItem(uid) {
     </div>`;
     $('.close', bg).addEventListener('click', close);
     $$('[data-img]', bg).forEach(b => b.addEventListener('click', () => { showMine = b.dataset.img === 'mine'; render(); }));
-    $$('select[data-f]', bg).forEach(s => s.addEventListener('change', async () => { it[s.dataset.f] = s.value; await db.put(it); render(); }));
+    $$('select[data-f]', bg).forEach(s => s.addEventListener('change', async () => { it[s.dataset.f] = s.value; changed = true; await db.put(it); render(); }));
     $$('[data-q]', bg).forEach(b => b.addEventListener('click', async () => {
       const nq = it.qty + parseInt(b.dataset.q, 10);
       if (nq < 1) return;
-      it.qty = nq; await db.put(it); render();
+      it.qty = nq; changed = true; await db.put(it); render();
     }));
     $('[data-act=refresh]', bg).addEventListener('click', async (ev) => {
       ev.target.disabled = true; ev.target.textContent = '...מעדכן';
-      try { it.card = await refetchCard(it.card); it.pricedAt = Date.now(); await db.put(it); toast('המחיר עודכן'); }
+      try { it.card = await refetchCard(it.card); it.pricedAt = Date.now(); changed = true; await db.put(it); toast(hasPrices(it.card) ? 'המחיר עודכן' : 'לא נמצא מחיר לקלף הזה כרגע'); }
       catch (err) { toast('אין חיבור למאגר כרגע'); }
       render();
     });
     $('[data-act=delete]', bg).addEventListener('click', async () => {
       if (!confirm(`למחוק את ${it.card.name} מהאוסף?`)) return;
       await db.del(it.uid);
+      changed = true;
       close();
     });
   };
@@ -2240,9 +2312,13 @@ $('#btnRefreshAll').addEventListener('click', async (e) => {
     btn.textContent = `🔄 מעדכן ${i}/${items.length}...`;
     try {
       if (!byId.has(it.card.id)) { byId.set(it.card.id, await refetchCard(it.card)); await sleep(150); }
-      it.card = byId.get(it.card.id);
-      it.pricedAt = Date.now();
-      await db.put(it);
+      const cur = await db.get(it.uid);
+      if (!cur) continue;
+      cur.card = byId.get(it.card.id);
+      cur.pricedAt = Date.now();
+      if (cur.firstValue == null) cur.firstValue = estimate(cur.card, cur.variant, cur.condition).ils;
+      await db.put(cur);
+      if (!hasPrices(cur.card)) failed++;
     } catch (err) { failed++; }
   }
   btn.disabled = false;
@@ -2279,7 +2355,8 @@ function tradeVerdict(give, get) {
   const base = Math.max(giveVal, getVal);
   const ratio = base > 0 ? diff / base : 0;
   let level;
-  if (!give.length || !get.length || base === 0) level = 'none';
+  if (!give.length || !get.length) level = 'none';
+  else if (base === 0) level = 'noprice';
   else if (ratio > 0.1) level = 'good';
   else if (ratio >= -0.1) level = 'fair';
   else if (ratio >= -0.3) level = 'bad';
@@ -2290,7 +2367,7 @@ function tradeVerdict(give, get) {
 function tradeItemHTML(x, side, i) {
   const v = tradeItemValue(x);
   return `<div class="t-item">
-    <img src="${esc(x.photo || x.card.img || '')}" alt="">
+    <img src="${esc(photoSrc(x.photo) || x.card.img || '')}" alt="" loading="lazy">
     <div class="t-info">
       <div class="t-name">${esc(x.card.name)}</div>
       <div class="t-sub">${esc(x.card.setName)} #${esc(x.card.number)}${x.fromUid ? ' · מהאוסף' : ''}</div>
@@ -2317,6 +2394,7 @@ async function renderTrade() {
   const pct = Math.round(Math.abs(v.ratio) * 100);
   const V = {
     none: ['🤔', 'בוא נבדוק!', 'הוסף קלפים לשני הצדדים ואני אגיד לך אם הטרייד משתלם.'],
+    noprice: ['❓', 'אין מספיק מחירים', 'לא מצאתי מחיר לקלפים האלה, אז אני לא יכול להשוות. נסה שוב כשיש אינטרנט, או בדוק את הקלפים ב-eBay.'],
     good: ['🎉', 'טרייד משתלם לך!', `אתה מקבל בערך <b>${amount}</b> יותר ממה שאתה נותן (${pct}%).`],
     fair: ['⚖️', 'טרייד הוגן', `השווי של שני הצדדים כמעט שווה (הפרש של ${amount}). טרייד טוב לשניכם!`],
     bad: ['⚠️', 'פחות משתלם לך', `אתה נותן בערך <b>${amount}</b> יותר ממה שאתה מקבל (${pct}%).`],
@@ -2338,7 +2416,7 @@ async function renderTrade() {
     <div class="v-emoji">${V[0]}</div>
     <div class="v-title">${V[1]}</div>
     <div class="v-text">${V[2]}</div>
-    ${v.level !== 'none' ? `<div class="scale"><div class="s-give" style="width:${gw}%"></div><div class="s-get" style="width:${100 - gw}%"></div></div>
+    ${v.level !== 'none' && v.level !== 'noprice' ? `<div class="scale"><div class="s-give" style="width:${gw}%"></div><div class="s-get" style="width:${100 - gw}%"></div></div>
       <div class="scale-lbl"><span style="color:var(--red)">📤 נותן ${fmtILS(v.giveVal)}</span><span style="color:var(--blue)">📥 מקבל ${fmtILS(v.getVal)}</span></div>` : ''}
     ${tips.length ? `<ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul>` : ''}
   </div>`;
@@ -2379,7 +2457,7 @@ async function openTradePicker() {
         const e = estimate(it.card, it.variant, it.condition);
         return `<div class="tile ${left <= 0 ? 'used' : ''}" data-uid="${esc(it.uid)}">
           ${left > 1 ? `<span class="qty">×${left}</span>` : ''}
-          <div class="img" style="background-image:url('${esc(it.photo || it.card.img || '')}')"></div>
+          <img class="img" src="${esc(photoSrc(it.photo) || it.card.img || '')}" alt="" loading="lazy" decoding="async">
           <div class="info"><div class="name" dir="ltr" style="text-align:right">${esc(it.card.name)}</div>
           <div class="val">${e.ils != null ? fmtILS(e.ils) : '—'}</div></div></div>`;
       }).join('')}</div>` : '<p class="muted" style="margin-top:12px">האוסף ריק – אפשר לסרוק את הקלף במקום.</p>'}
@@ -2474,7 +2552,11 @@ $('#fileImport').addEventListener('change', async (e) => {
     if (!Array.isArray(items)) throw new Error('format');
     let n = 0;
     for (const it of items) {
-      if (it && it.uid && it.card && it.card.id) { await db.put(it); n++; }
+      if (it && it.uid && it.card && it.card.id) {
+        it.qty = Math.max(1, parseInt(it.qty, 10) || 1);
+        if (it.photo && !/^data:image\/(jpeg|png|webp);base64,/.test(it.photo)) it.photo = null;
+        await db.put(it); n++;
+      }
     }
     toast(`יובאו ${n} קלפים`);
   } catch (err) {
@@ -2855,7 +2937,7 @@ function renderChart() {
     return { it, cur, d: cur - it.firstValue, pct: it.firstValue > 0 ? (cur - it.firstValue) / it.firstValue : 0 };
   }).filter(m => m && Math.abs(m.d) >= 0.5);
   const moverHTML = (m) => `<div class="mover" data-uid="${esc(m.it.uid)}">
-      <img src="${esc(m.it.photo || m.it.card.img || '')}" alt="">
+      <img src="${esc(photoSrc(m.it.photo) || m.it.card.img || '')}" alt="" loading="lazy">
       <div class="m-name">${esc(m.it.card.name)}</div>
       <div class="m-ch" style="color:${m.d > 0 ? '#15803d' : '#b91c1c'}">${m.d > 0 ? '▲' : '▼'} ${fmtILS(Math.abs(m.d))}<small>${m.d > 0 ? '+' : '−'}${Math.round(Math.abs(m.pct) * 100)}% · עכשיו ${fmtILS(m.cur)}</small></div>
     </div>`;
@@ -2881,13 +2963,20 @@ async function autoRefreshPrices() {
   const items = await db.all();
   const stale = items.filter(it => !hasPrices(it.card) || Date.now() - (it.pricedAt || 0) > 3 * 864e5);
   const done = new Map();
+  let fails = 0;
   for (const it of stale.slice(0, 40)) {
     try {
       if (!done.has(it.card.id)) { done.set(it.card.id, await refetchCard(it.card)); await sleep(400); }
-      it.card = done.get(it.card.id);
-      it.pricedAt = Date.now();
-      await db.put(it);
-    } catch (e) { break; }
+      const cur = await db.get(it.uid);  // re-read: the user may have edited it meanwhile
+      if (!cur) continue;
+      cur.card = done.get(it.card.id);
+      cur.pricedAt = Date.now();
+      if (cur.firstValue == null) cur.firstValue = estimate(cur.card, cur.variant, cur.condition).ils;
+      await db.put(cur);
+      fails = 0;
+    } catch (e) {
+      if (++fails >= 3) break; // the sources are down – try again next time
+    }
   }
   if (done.size && currentView === 'collection') renderCollection();
 }
@@ -2995,7 +3084,7 @@ function cloudStatus(text) {
 
 onDbChange = () => {
   if (cloud.restoring || !settings.get('ghToken')) return;
-  const c = lsGet('nitai-cloud', {}); c.dirty = true; lsSet('nitai-cloud', c);
+  const c = lsGet('nitai-cloud', {}); c.dirty = true; c.rev = (c.rev || 0) + 1; lsSet('nitai-cloud', c);
   clearTimeout(cloud.timer);
   cloud.timer = setTimeout(() => cloudBackup().catch(() => {}), 8000);
 };
@@ -3027,6 +3116,7 @@ async function cloudBackup() {
   cloudStatus('☁️ מגבה...');
   try {
     const c = lsGet('nitai-cloud', {});
+    const startRev = c.rev || 0;
     const files = await buildBackupFiles();
     const hashes = c.hashes || {};
     const changed = {};
@@ -3048,9 +3138,12 @@ async function cloudBackup() {
     }
     c.hashes = Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fnv(v)]));
     c.lastBackup = Date.now();
-    c.dirty = false;
+    const latest = lsGet('nitai-cloud', {});
+    c.rev = latest.rev || 0;
+    c.dirty = (latest.rev || 0) !== startRev; // something changed while uploading
     lsSet('nitai-cloud', c);
     cloudStatus();
+    if (c.dirty) { clearTimeout(cloud.timer); cloud.timer = setTimeout(() => cloudBackup().catch(() => {}), 3000); }
   } catch (e) {
     console.warn('cloud backup', e);
     cloudStatus(e.status === 401 ? '❌ המפתח לא תקין או שפג תוקפו' : '⚠️ הגיבוי נכשל (אין אינטרנט?) – ננסה שוב בפעם הבאה');
@@ -3129,7 +3222,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-5';
+const APP_VERSION = '2026.10.21-6';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

@@ -1787,14 +1787,15 @@ async function imageMatch(canvas, topN = 24) {
   return best.map(b => ({ card: dbCard(db, db.cards[b.k]), sim: b.sim }));
 }
 
-// thresholds for "sure" – tune with the SELF-TEST numbers printed by the index build
+// thresholds for "sure" – first real build (20,618 cards): top1 95.3%, top5 100%, correct sim p10 0.83, margin p10 0.18
 const IMG_SURE_SIM = 0.6, IMG_SURE_MARGIN = 0.08;
 /** Sure match from the picture alone: a high score, and clearly better than any card with other artwork.
     Reprints share the same picture, so if several sets have it, the collector number (from OCR) decides. */
 function imageConfident(matches, parsed) {
   if (!matches || !matches.length) return null;
   const top = matches[0];
-  const same = matches.filter(m => m.card.name === top.card.name && m.sim >= top.sim - 0.03);
+  // reprints of the same card look almost the same – treat close ones as one group (self-test: most misses are reprints)
+  const same = matches.filter(m => m.card.name === top.card.name && m.sim >= top.sim - 0.06);
   const other = matches.find(m => !same.includes(m));
   const clear = top.sim >= IMG_SURE_SIM && (!other || top.sim - other.sim >= IMG_SURE_MARGIN);
   if (!clear) return null;
@@ -3690,7 +3691,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.22-12';
+const APP_VERSION = '2026.10.22-13';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

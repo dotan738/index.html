@@ -196,7 +196,7 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
 }
 .round-btn small { font-size: 0.6rem; color: var(--muted); position: absolute; bottom: -18px; white-space: nowrap; }
 .adjust-wrap { position: relative; margin: 10px auto; max-width: 100%; width: fit-content; touch-action: none; }
-.adjust-wrap img { display: block; max-width: 100%; max-height: 62vh; border-radius: 10px; user-select: none; -webkit-user-drag: none; }
+.adjust-wrap img { display: block; max-width: 100%; max-height: 52vh; border-radius: 10px; user-select: none; -webkit-user-drag: none; }
 .adjust-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .ident-head { display: flex; gap: 14px; align-items: flex-start; }
 .ident-head canvas, .ident-head img.thumb { width: 120px; border-radius: 8px; box-shadow: var(--shadow); flex: none; }
@@ -503,6 +503,15 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
   background: #e3f7ea; color: #145c33; border: 2px solid #4cc27a; border-radius: 16px; font-size: 0.92rem; animation: viewIn .3s ease-out;
 }
 .auto-banner .btn { padding: 7px 12px; font-size: 0.82rem; flex: none; }
+/* corner screen: action buttons always visible above the bottom menu */
+.adjust-bar {
+  position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px); z-index: 20;
+  display: flex; gap: 8px; justify-content: center; padding: 8px; margin-top: 8px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px; box-shadow: 0 4px 16px rgba(29, 44, 94, 0.15);
+}
+.adjust-bar .btn { flex: 1; padding: 11px 6px; }
+.adjust-bar #btnAdjustOk { flex: 1.4; }
 </style>
 </head>
 <body>
@@ -596,17 +605,17 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
 
     <!-- Step: adjust corners -->
     <div id="stepAdjust" hidden>
-      <p class="muted" style="margin-top:8px">גרור את 4 הנקודות לפינות של הקלף. הקו הצהוב העבה = החלק העליון של הקלף.</p>
+      <p class="muted" id="detectNote" style="text-align:center;margin-top:8px;min-height:1.3em"></p>
       <div class="adjust-wrap" id="adjustWrap">
         <img id="adjustImg" alt="">
         <svg id="adjustSvg"></svg>
       </div>
-      <div class="row" style="justify-content:center">
+      <p class="muted" style="text-align:center;font-size:.78rem">הנקודות = פינות הקלף · הקו הצהוב העבה = החלק העליון</p>
+      <div class="adjust-bar">
         <button class="btn btn-ghost" id="btnRetake">↩️ צלם שוב</button>
         <button class="btn btn-ghost" id="btnRotate">↻ סובב</button>
         <button class="btn btn-red" id="btnAdjustOk">✓ המשך</button>
       </div>
-      <p class="muted" id="detectNote" style="text-align:center;margin-top:8px"></p>
     </div>
 
     <!-- Step: identify -->
@@ -1731,6 +1740,8 @@ $('#autoAdd').addEventListener('change', (e) => {
   toast(e.target.checked ? '⚡ הוספה אוטומטית הופעלה' : 'הוספה אוטומטית כובתה');
 });
 const autoMode = () => captureMode === 'add' && autoAddOn();
+// skip the corner screen when the edges were found (in "add" mode only if auto-add is on)
+const autoContinue = () => captureMode !== 'add' || autoAddOn();
 
 /** Open the scanner to add a card to one side of the trade. */
 function goTradeScan(side, manualQuery) {
@@ -1775,6 +1786,8 @@ const cap = {
 };
 
 function showStep(id) {
+  $('#capSub').hidden = id !== 'stepCamera';
+  $('#autoAddWrap').hidden = id !== 'stepCamera' || captureMode !== 'add';
   ['stepCamera', 'stepAdjust', 'stepIdentify', 'stepResult'].forEach(s => { $('#' + s).hidden = s !== id; });
   window.scrollTo(0, 0);
 }
@@ -1901,7 +1914,7 @@ function beginAdjust(canvas, initialQuad) {
     let q = null;
     try { q = detectCardQuad(canvas); } catch (e) { console.warn('detect', e); }
     if (cap.userMoved) { note.textContent = ''; return; }
-    if (q && autoMode()) {
+    if (q && autoContinue()) {
       cap.quad = q; drawQuad();
       note.textContent = '✨ מצאתי את הקלף! ממשיך אוטומטית... (גע בנקודה כדי לתקן)';
       setTimeout(() => {
@@ -3409,7 +3422,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-8';
+const APP_VERSION = '2026.10.21-9';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

@@ -607,6 +607,7 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
     </div>
     <div class="panel">
       <h2>🗑️ איפוס</h2>
+      <p class="muted" id="appVersion" style="margin-bottom:8px"></p>
       <button class="btn btn-ghost" id="btnClearAll" style="color:var(--red)">מחק את כל האוסף</button>
     </div>
   </section>
@@ -1287,14 +1288,19 @@ function detectCardQuad(canvas) {
    Card recognition: OCR (Tesseract.js) or Claude vision
    ===================================================================== */
 let ocrWorkerP = null;
+let ocrProgressEl = null;
+function ocrProgress(m) {
+  if (!ocrProgressEl || !m || typeof m.progress !== 'number') return;
+  if (/loading|initializ/i.test(m.status || '')) ocrProgressEl.textContent = `מוריד את קורא הטקסט... ${Math.round(m.progress * 100)}%`;
+}
 function getOcrWorker() {
   if (ocrWorkerP) return ocrWorkerP;
   ocrWorkerP = Promise.race([
     (async () => {
       await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 40000);
-      return await window.Tesseract.createWorker('eng', 1);
+      return await window.Tesseract.createWorker('eng', 1, { logger: (m) => ocrProgress(m) });
     })(),
-    sleep(45000).then(() => { throw new Error('OCR load timeout'); }),
+    sleep(40000).then(() => { throw new Error('OCR load timeout'); }),
   ]);
   ocrWorkerP.catch(() => { ocrWorkerP = null; });
   return ocrWorkerP;
@@ -1555,6 +1561,7 @@ function showStep(id) {
 }
 
 async function startCaptureFlow() {
+  if (!settings.get('anthropicKey')) setTimeout(() => getOcrWorker().catch(() => {}), 1500);
   cap.srcCanvas = cap.quad = cap.cardCanvas = cap.parsed = cap.selected = cap.aiFinish = null;
   showStep('stepCamera');
   await startCamera();
@@ -1766,6 +1773,7 @@ function status(text, state = 'busy') {
 
 async function identify() {
   const token = cap.cardCanvas;
+  cap.manualSearch = false;
   let parsed = null;
   if (settings.get('anthropicKey')) {
     const st = status('מזהה את הקלף עם בינה מלאכותית...');
@@ -1781,8 +1789,10 @@ async function identify() {
   if (cap.cardCanvas !== token) return;
   if (!parsed || (!parsed.name && !parsed.number)) {
     const st = status('קורא את הטקסט על הקלף (בפעם הראשונה זה לוקח קצת זמן)...');
+    ocrProgressEl = $('#identStatus li:last-child span:last-child');
+    $('#candTitle').textContent = 'לא רוצה לחכות? כתוב את שם הקלף (באנגלית) ולחץ חפש ⬇️';
     try {
-      parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(70000).then(() => { throw new Error('OCR timeout'); })]);
+      parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(50000).then(() => { throw new Error('OCR timeout'); })]);
       const bits = [parsed.name, parsed.number && ('#' + parsed.number + (parsed.total ? '/' + parsed.total : ''))].filter(Boolean).join(' ');
       st.done(bits ? `קראתי: ${bits}` : 'לא הצלחתי לקרוא את השם – אפשר להקליד למטה', !!bits);
     } catch (e) {
@@ -1790,8 +1800,9 @@ async function identify() {
       st.done('קריאת הטקסט לא זמינה כרגע – הקלד את שם הקלף למטה', false);
       parsed = { name: '', number: '', total: '' };
     }
+    ocrProgressEl = null;
   }
-  if (cap.cardCanvas !== token) return;
+  if (cap.cardCanvas !== token || cap.manualSearch) return;
   $('#identQuery').value = [parsed.name, parsed.number ? parsed.number + (parsed.total ? '/' + parsed.total : '') : ''].filter(Boolean).join(' ');
   if (parsed.name || parsed.number) await runSearch(parsed);
   else $('#identQuery').focus();
@@ -1800,7 +1811,7 @@ async function identify() {
 $('#identSearchForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const q = $('#identQuery').value.trim();
-  if (q) runSearch(parseQuery(q));
+  if (q) { cap.manualSearch = true; runSearch(parseQuery(q)); }
 });
 $('#btnIdentBack').addEventListener('click', () => startCaptureFlow());
 
@@ -3005,6 +3016,10 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
+const APP_VERSION = '2026.10.21-4';
+window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
+window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
+$('#appVersion').textContent = 'גרסה ' + APP_VERSION;
 renderRatesInfo();
 refreshRates().then(() => { if (currentView === 'collection') renderCollection(); });
 applyProfile();

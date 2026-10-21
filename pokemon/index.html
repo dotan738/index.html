@@ -256,6 +256,43 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
 .img-toggle button.on { background: var(--navy); color: #fff; }
 .modal .main-img { display: block; width: min(70%, 300px); margin: 0 auto; border-radius: 12px; box-shadow: var(--shadow); aspect-ratio: 63/88; object-fit: cover; }
 
+/* ---------- Trade ---------- */
+.trade-side h2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.trade-side h2 .tot { font-size: 1rem; color: var(--green); font-weight: 900; }
+.trade-side.give { border-top: 5px solid var(--red); }
+.trade-side.get { border-top: 5px solid var(--blue); }
+.t-item { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.t-item:last-of-type { border-bottom: none; }
+.t-item img { width: 52px; aspect-ratio: 63/88; object-fit: cover; border-radius: 6px; background: #eef1f7; flex: none; }
+.t-item .t-info { flex: 1; min-width: 0; }
+.t-item .t-name { font-weight: 700; font-size: 0.92rem; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-item .t-sub { font-size: 0.72rem; color: var(--muted); direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-item .t-selects { display: flex; gap: 6px; margin-top: 5px; }
+.t-item select { padding: 5px 6px; font-size: 0.78rem; border-radius: 8px; }
+.t-item .t-val { font-weight: 900; color: var(--navy); white-space: nowrap; font-size: 0.95rem; }
+.t-item .t-del { border: none; background: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); padding: 4px; }
+.t-empty { color: var(--muted); font-size: 0.88rem; padding: 6px 0 10px; }
+.trade-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.trade-actions .btn { flex: 1; padding: 10px 8px; font-size: 0.85rem; }
+.verdict { border-radius: 18px; padding: 18px 16px; text-align: center; margin-bottom: 14px; box-shadow: var(--shadow); }
+.verdict .v-emoji { font-size: 2.6rem; line-height: 1; }
+.verdict .v-title { font-size: 1.35rem; font-weight: 900; margin-top: 6px; }
+.verdict .v-text { font-size: 0.92rem; margin-top: 6px; line-height: 1.5; }
+.verdict.good { background: #e3f7ea; color: #145c33; border: 2px solid #4cc27a; }
+.verdict.fair { background: #e8f0fb; color: #1d3f72; border: 2px solid #6d9de0; }
+.verdict.bad { background: #fff1d6; color: #7a4a00; border: 2px solid #f0b13c; }
+.verdict.terrible { background: #fde4e0; color: #8a1d0c; border: 2px solid #ec6b55; }
+.verdict.none { background: #fff; color: var(--muted); border: 2px dashed var(--line); }
+.scale { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin: 12px 0 4px; background: #e6e9f0; }
+.scale .s-give { background: var(--red); }
+.scale .s-get { background: var(--blue); }
+.scale-lbl { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; }
+.tips { list-style: none; margin-top: 10px; text-align: right; }
+.tips li { font-size: 0.85rem; padding: 3px 0; }
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 12px; }
+.pick-grid .tile .name { font-size: 0.8rem; }
+.pick-grid .tile.used { opacity: 0.35; pointer-events: none; }
+
 @media (min-width: 700px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
   .modal-bg { align-items: center; }
@@ -373,6 +410,36 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
     <div id="stepResult" hidden></div>
   </section>
 
+  <!-- ===== Trade ===== -->
+  <section id="view-trade" hidden>
+    <div class="cap-title">🤝 בודק טריידים</div>
+    <p class="muted" style="margin-bottom:12px">שים את הקלפים שאתה נותן ואת הקלפים שהחבר נותן לך – ואני אגיד לך אם הטרייד משתלם.</p>
+    <div id="tradeVerdict"></div>
+    <div class="panel trade-side give">
+      <h2><span>📤 אני נותן</span><span class="tot" id="tradeGiveTot">₪0</span></h2>
+      <div id="tradeGiveList"></div>
+      <div class="trade-actions">
+        <button class="btn btn-ghost" data-trade-pick>📚 מהאוסף שלי</button>
+        <button class="btn btn-ghost" data-trade-scan="give">📷 סרוק</button>
+        <button class="btn btn-ghost" data-trade-search="give">🔍 חפש</button>
+      </div>
+    </div>
+    <div class="panel trade-side get">
+      <h2><span>📥 אני מקבל מהחבר</span><span class="tot" id="tradeGetTot">₪0</span></h2>
+      <div id="tradeGetList"></div>
+      <div class="trade-actions">
+        <button class="btn btn-blue" data-trade-scan="get">📷 סרוק קלף של החבר</button>
+        <button class="btn btn-ghost" data-trade-search="get">🔍 חפש</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-green grow" id="btnTradeDo">✅ עשינו טרייד – עדכן את האוסף</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-ghost grow" id="btnTradeClear">🧹 טרייד חדש</button>
+    </div>
+  </section>
+
   <!-- ===== Settings ===== -->
   <section id="view-settings" hidden>
     <div class="panel">
@@ -421,6 +488,7 @@ label.field { display: block; font-size: 0.85rem; font-weight: 500; margin-botto
   <button data-go="collection" class="active"><span class="ico">📚</span>האוסף שלי</button>
   <button data-go="add"><span class="ico">➕</span>הוסף קלף</button>
   <button data-go="value" class="scan-btn"><span class="ico">💰</span>כמה זה שווה?</button>
+  <button data-go="trade"><span class="ico">🤝</span>טרייד</button>
   <button data-go="settings"><span class="ico">⚙️</span>הגדרות</button>
 </nav>
 
@@ -1223,7 +1291,8 @@ async function rankCandidates(cands, parsed, cardCanvas) {
    Navigation
    ===================================================================== */
 let currentView = 'collection';
-let captureMode = 'add'; // 'add' | 'value'
+let captureMode = 'add'; // 'add' | 'value' | 'trade'
+let tradeSide = 'get';    // which trade side a scanned card goes to
 
 function go(view) {
   if (view === 'add' || view === 'value') {
@@ -1238,14 +1307,30 @@ function go(view) {
     showView(view);
     if (view === 'collection') renderCollection();
     if (view === 'settings') renderSettings();
+    if (view === 'trade') renderTrade();
   }
   $$('.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.go === view));
+}
+
+/** Open the scanner to add a card to one side of the trade. */
+function goTradeScan(side, manualQuery) {
+  captureMode = 'trade';
+  tradeSide = side;
+  showView('capture');
+  $('#capTitle').textContent = side === 'get' ? '🤝 סריקת קלף של החבר' : '🤝 סריקת קלף שאני נותן';
+  $('#capSub').textContent = 'צלם את הקלף, בחר את הקלף הנכון והוא ייכנס לטרייד.';
+  $$('.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.go === 'trade'));
+  startCaptureFlow();
+  if (manualQuery) {
+    $('#manualQuery').value = '';
+    $('#manualQuery').focus();
+  }
 }
 
 function showView(name) {
   if (currentView === 'capture' && name !== 'capture') stopCamera();
   currentView = name;
-  ['collection', 'capture', 'settings'].forEach(v => { $('#view-' + v).hidden = v !== name; });
+  ['collection', 'capture', 'trade', 'settings'].forEach(v => { $('#view-' + v).hidden = v !== name; });
   window.scrollTo(0, 0);
 }
 
@@ -1629,8 +1714,10 @@ function showResult(card) {
         <span style="font-weight:700">כמות</span>
         <div class="qty-ctrl"><button id="qtyMinus">−</button><span id="qtyVal">1</span><button id="qtyPlus">+</button></div>
       </div>
-      <button class="btn ${captureMode === 'add' ? 'btn-red' : 'btn-yellow'} btn-block" id="btnAddToColl" style="margin-top:14px">
-        ${captureMode === 'add' ? '⭐ הוסף לאוסף שלי' : '⭐ הוסף גם לאוסף שלי'}</button>
+      ${captureMode === 'trade'
+        ? `<button class="btn btn-blue btn-block" id="btnAddToTrade" style="margin-top:14px">🤝 הוסף לטרייד (${tradeSide === 'get' ? 'אני מקבל' : 'אני נותן'})</button>`
+        : `<button class="btn ${captureMode === 'add' ? 'btn-red' : 'btn-yellow'} btn-block" id="btnAddToColl" style="margin-top:14px">
+        ${captureMode === 'add' ? '⭐ הוסף לאוסף שלי' : '⭐ הוסף גם לאוסף שלי'}</button>`}
       <div class="row" style="margin-top:10px">
         <button class="btn btn-ghost grow" id="btnResBack">↩️ זה לא הקלף</button>
         <button class="btn btn-ghost grow" id="btnResNext">📷 קלף הבא</button>
@@ -1649,6 +1736,16 @@ function showResult(card) {
   $('#qtyPlus').addEventListener('click', () => { qty++; $('#qtyVal').textContent = qty; });
   $('#btnResBack').addEventListener('click', () => showStep('stepIdentify'));
   $('#btnResNext').addEventListener('click', () => startCaptureFlow());
+  if (captureMode === 'trade') {
+    $('#btnAddToTrade').addEventListener('click', () => {
+      const photo = photoDataUrl(cap.cardCanvas);
+      for (let i = 0; i < qty; i++) trade[tradeSide].push({ card, variant, condition, photo, fromUid: null });
+      saveTrade();
+      toast(`🤝 ${card.name} נוסף לטרייד`);
+      go('trade');
+    });
+    return;
+  }
   $('#btnAddToColl').addEventListener('click', async (e) => {
     e.target.disabled = true;
     try {
@@ -1817,6 +1914,182 @@ $('#btnRefreshAll').addEventListener('click', async (e) => {
   btn.textContent = '🔄 עדכן מחירים לכל האוסף';
   toast(failed ? `עודכנו ${items.length - failed} קלפים, ${failed} נכשלו` : 'כל המחירים עודכנו ✨');
   renderCollection();
+});
+
+/* =====================================================================
+   Trade checker
+   ===================================================================== */
+const trade = (() => {
+  try {
+    const t = JSON.parse(localStorage.getItem('nitai-trade') || 'null');
+    if (t && Array.isArray(t.give) && Array.isArray(t.get)) return t;
+  } catch (e) {}
+  return { give: [], get: [] };
+})();
+function saveTrade() {
+  try { localStorage.setItem('nitai-trade', JSON.stringify(trade)); }
+  catch (e) {
+    // storage full (photos) – keep the trade without photos
+    try { localStorage.setItem('nitai-trade', JSON.stringify({ give: trade.give.map(x => ({ ...x, photo: null })), get: trade.get.map(x => ({ ...x, photo: null })) })); } catch (e2) {}
+  }
+}
+const tradeItemValue = (x) => estimate(x.card, x.variant, x.condition).ils;
+
+/** Decide if the trade is worth it. Pure function so it is easy to reason about. */
+function tradeVerdict(give, get) {
+  const sum = (arr) => arr.reduce((s, x) => s + (tradeItemValue(x) || 0), 0);
+  const giveVal = sum(give), getVal = sum(get);
+  const missing = [...give, ...get].filter(x => tradeItemValue(x) == null);
+  const diff = getVal - giveVal;
+  const base = Math.max(giveVal, getVal);
+  const ratio = base > 0 ? diff / base : 0;
+  let level;
+  if (!give.length || !get.length || base === 0) level = 'none';
+  else if (ratio > 0.1) level = 'good';
+  else if (ratio >= -0.1) level = 'fair';
+  else if (ratio >= -0.3) level = 'bad';
+  else level = 'terrible';
+  return { giveVal, getVal, diff, ratio, level, missing };
+}
+
+function tradeItemHTML(x, side, i) {
+  const v = tradeItemValue(x);
+  return `<div class="t-item">
+    <img src="${esc(x.photo || x.card.img || '')}" alt="">
+    <div class="t-info">
+      <div class="t-name">${esc(x.card.name)}</div>
+      <div class="t-sub">${esc(x.card.setName)} #${esc(x.card.number)}${x.fromUid ? ' · מהאוסף' : ''}</div>
+      <div class="t-selects">
+        <select data-side="${side}" data-i="${i}" data-f="variant" aria-label="סוג הקלף">${variantOptions(x.card, x.variant)}</select>
+        <select data-side="${side}" data-i="${i}" data-f="condition" aria-label="מצב הקלף">${conditionOptions(x.condition)}</select>
+      </div>
+    </div>
+    <div class="t-val">${v != null ? fmtILS(v) : '—'}</div>
+    <button class="t-del" data-del-side="${side}" data-i="${i}" aria-label="הסר">✕</button>
+  </div>`;
+}
+
+async function renderTrade() {
+  const items = await db.all().catch(() => []);
+  const v = tradeVerdict(trade.give, trade.get);
+  $('#tradeGiveList').innerHTML = trade.give.length ? trade.give.map((x, i) => tradeItemHTML(x, 'give', i)).join('') : '<div class="t-empty">עוד לא בחרת קלפים לתת.</div>';
+  $('#tradeGetList').innerHTML = trade.get.length ? trade.get.map((x, i) => tradeItemHTML(x, 'get', i)).join('') : '<div class="t-empty">סרוק את הקלפים שהחבר מציע לך.</div>';
+  $('#tradeGiveTot').textContent = fmtILS(v.giveVal);
+  $('#tradeGetTot').textContent = fmtILS(v.getVal);
+  $('#btnTradeDo').disabled = !(trade.give.length || trade.get.length);
+
+  const amount = fmtILS(Math.abs(v.diff));
+  const pct = Math.round(Math.abs(v.ratio) * 100);
+  const V = {
+    none: ['🤔', 'בוא נבדוק!', 'הוסף קלפים לשני הצדדים ואני אגיד לך אם הטרייד משתלם.'],
+    good: ['🎉', 'טרייד משתלם לך!', `אתה מקבל בערך <b>${amount}</b> יותר ממה שאתה נותן (${pct}%).`],
+    fair: ['⚖️', 'טרייד הוגן', `השווי של שני הצדדים כמעט שווה (הפרש של ${amount}). טרייד טוב לשניכם!`],
+    bad: ['⚠️', 'פחות משתלם לך', `אתה נותן בערך <b>${amount}</b> יותר ממה שאתה מקבל (${pct}%).`],
+    terrible: ['🛑', 'לא כדאי!', `אתה נותן בערך <b>${amount}</b> יותר ממה שאתה מקבל (${pct}%). כדאי לבקש עוד קלפים או לוותר.`],
+  }[v.level];
+
+  const tips = [];
+  if (v.level === 'bad' || v.level === 'terrible') tips.push(`💡 כדי שיהיה הוגן, בקש מהחבר עוד קלפים בשווי של בערך ${amount}.`);
+  if (v.level === 'good' && v.ratio > 0.3) tips.push('🤝 הטרייד ממש טוב בשבילך – כדאי לוודא שגם החבר יודע כמה הקלפים שווים, כדי שיישארו חברים 🙂');
+  if (v.missing.length) tips.push(`❓ אין מחיר ל-${v.missing.length} קלפים (${v.missing.map(x => esc(x.card.name)).join(', ')}) – הם לא נספרו בחישוב.`);
+  if (trade.get.some(x => x.condition === 'NM')) tips.push('🔍 בדוק את הקלפים של החבר מקרוב: קצוות לבנים, שריטות או קיפולים מורידים מהשווי. אפשר לשנות את המצב ברשימה.');
+  for (const x of trade.give) {
+    const owned = x.fromUid && items.find(it => it.uid === x.fromUid);
+    const givingCount = trade.give.filter(y => y.fromUid === x.fromUid).length;
+    if (owned && owned.qty - givingCount <= 0 && !tips.some(t => t.includes(x.card.name))) tips.push(`📌 ${esc(x.card.name)} – זה העותק האחרון שלך מהקלף הזה.`);
+  }
+  const gw = v.giveVal + v.getVal > 0 ? (v.giveVal / (v.giveVal + v.getVal)) * 100 : 50;
+  $('#tradeVerdict').innerHTML = `<div class="verdict ${v.level}">
+    <div class="v-emoji">${V[0]}</div>
+    <div class="v-title">${V[1]}</div>
+    <div class="v-text">${V[2]}</div>
+    ${v.level !== 'none' ? `<div class="scale"><div class="s-give" style="width:${gw}%"></div><div class="s-get" style="width:${100 - gw}%"></div></div>
+      <div class="scale-lbl"><span style="color:var(--red)">📤 נותן ${fmtILS(v.giveVal)}</span><span style="color:var(--blue)">📥 מקבל ${fmtILS(v.getVal)}</span></div>` : ''}
+    ${tips.length ? `<ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul>` : ''}
+  </div>`;
+}
+
+$('#view-trade').addEventListener('change', (e) => {
+  const s = e.target.closest('select[data-side]');
+  if (!s) return;
+  trade[s.dataset.side][+s.dataset.i][s.dataset.f] = s.value;
+  saveTrade();
+  renderTrade();
+});
+$('#view-trade').addEventListener('click', (e) => {
+  const del = e.target.closest('[data-del-side]');
+  if (del) { trade[del.dataset.delSide].splice(+del.dataset.i, 1); saveTrade(); renderTrade(); return; }
+  const scan = e.target.closest('[data-trade-scan]');
+  if (scan) { goTradeScan(scan.dataset.tradeScan); return; }
+  const search = e.target.closest('[data-trade-search]');
+  if (search) { goTradeScan(search.dataset.tradeSearch, true); return; }
+  if (e.target.closest('[data-trade-pick]')) openTradePicker();
+});
+
+async function openTradePicker() {
+  const items = await db.all();
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  const close = () => { bg.remove(); renderTrade(); };
+  bg.addEventListener('click', (e) => { if (e.target === bg) close(); });
+  const render = () => {
+    const used = (uid) => trade.give.filter(x => x.fromUid === uid).length;
+    items.sort((a, b) => itemValue(b) / b.qty - itemValue(a) / a.qty);
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+      <button class="close" aria-label="סגור">✕</button>
+      <h2>📚 איזה קלף אתה נותן?</h2>
+      <p class="muted">לחץ על קלף כדי להוסיף אותו לטרייד.</p>
+      ${items.length ? `<div class="pick-grid">${items.map(it => {
+        const left = it.qty - used(it.uid);
+        const e = estimate(it.card, it.variant, it.condition);
+        return `<div class="tile ${left <= 0 ? 'used' : ''}" data-uid="${esc(it.uid)}">
+          ${left > 1 ? `<span class="qty">×${left}</span>` : ''}
+          <div class="img" style="background-image:url('${esc(it.photo || it.card.img || '')}')"></div>
+          <div class="info"><div class="name" dir="ltr" style="text-align:right">${esc(it.card.name)}</div>
+          <div class="val">${e.ils != null ? fmtILS(e.ils) : '—'}</div></div></div>`;
+      }).join('')}</div>` : '<p class="muted" style="margin-top:12px">האוסף ריק – אפשר לסרוק את הקלף במקום.</p>'}
+      <button class="btn btn-blue btn-block" style="margin-top:14px" data-done>סיימתי</button>
+    </div>`;
+    $('.close', bg).addEventListener('click', close);
+    $('[data-done]', bg).addEventListener('click', close);
+    $$('.tile', bg).forEach(t => t.addEventListener('click', () => {
+      const it = items.find(x => x.uid === t.dataset.uid);
+      trade.give.push({ card: it.card, variant: it.variant, condition: it.condition, photo: it.photo || null, fromUid: it.uid });
+      saveTrade();
+      toast(`📤 ${it.card.name} נוסף לטרייד`, 1400);
+      render();
+    }));
+  };
+  render();
+  document.body.appendChild(bg);
+}
+
+$('#btnTradeDo').addEventListener('click', async () => {
+  if (!confirm('לעדכן את האוסף? הקלפים שנתת יוצאו מהאוסף, והקלפים שקיבלת ייכנסו אליו.')) return;
+  const items = await db.all();
+  let removed = 0;
+  for (const x of trade.give) {
+    const it = x.fromUid && items.find(y => y.uid === x.fromUid);
+    if (!it) continue;
+    it.qty -= 1;
+    removed++;
+    if (it.qty <= 0) await db.del(it.uid); else await db.put(it);
+  }
+  for (const x of trade.get) {
+    const it = await addToCollection(x.card, x.variant, x.condition, 1, null);
+    if (x.photo && !it.photo) { it.photo = x.photo; await db.put(it); }
+  }
+  const added = trade.get.length;
+  trade.give = []; trade.get = [];
+  saveTrade();
+  toast(`🤝 הטרייד נשמר! יצאו ${removed} קלפים, נכנסו ${added}.`);
+  go('collection');
+});
+$('#btnTradeClear').addEventListener('click', () => {
+  if ((trade.give.length || trade.get.length) && !confirm('לנקות את הטרייד ולהתחיל חדש?')) return;
+  trade.give = []; trade.get = [];
+  saveTrade();
+  renderTrade();
 });
 
 /* =====================================================================

@@ -1,7 +1,7 @@
 // Service worker: lets the app be installed and opened without a connection.
 // App files are network-first (always fresh when online); card APIs are never cached here.
-const CACHE = 'nitai-pokedex-v10';
-const SHELL = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'nitai-pokedex-v11';
+const SHELL = ['./', 'index.html', 'card-features.js', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   // cache: 'reload' – never fill the offline copy from a stale HTTP cache

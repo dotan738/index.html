@@ -1,0 +1,45 @@
+# Builds the app's offline card database (pokemon/data): every card, a price list and image fingerprints.
+# Runs every Monday and can be started by hand (Actions -> "Build card database" -> Run workflow).
+name: Build card database
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: card-index
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install image library
+        working-directory: pokemon/tools
+        run: npm install --no-save --no-audit --no-fund sharp@0.33.5
+
+      - name: Build database
+        run: node pokemon/tools/build-card-index.mjs
+        env:
+          POKEMONTCG_API_KEY: ${{ secrets.POKEMONTCG_API_KEY }}
+
+      - name: Commit
+        run: |
+          git config user.name "card-index-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pokemon/data
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Update card database ($(date -u +%Y-%m-%d))"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

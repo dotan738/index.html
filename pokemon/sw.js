@@ -1,10 +1,11 @@
 // Service worker: lets the app be installed and opened without a connection.
 // App files are network-first (always fresh when online); card APIs are never cached here.
-const CACHE = 'nitai-pokedex-v9';
-const SHELL = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'nitai-pokedex-v11';
+const SHELL = ['./', 'index.html', 'card-features.js', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' – never fill the offline copy from a stale HTTP cache
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -17,7 +18,8 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   // Network first, but on a weak connection don't wait more than 4s before using the saved copy.
-  const network = fetch(req).then((res) => {
+  // cache: 'no-cache' – always ask the server whether there is a newer version (GitHub Pages caches for 10 min)
+  const network = fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then((res) => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
     return res;
   });

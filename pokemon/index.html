@@ -512,6 +512,12 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
 }
 .adjust-bar .btn { flex: 1; padding: 11px 6px; }
 .adjust-bar #btnAdjustOk { flex: 1.4; }
+.cand .badge.owned { right: auto; left: 6px; background: var(--blue); }
+.dex-grid .set-card .pr {
+  position: absolute; top: 3px; left: 3px; background: rgba(21, 128, 61, .9); color: #fff; font-size: 0.62rem;
+  font-weight: 700; padding: 1px 5px; border-radius: 6px;
+}
+.subtabs button { padding: 9px 6px; font-size: 0.8rem; }
 </style>
 </head>
 <body>
@@ -541,6 +547,7 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
       <button data-ctab="sets">🧩 סטים</button>
       <button data-ctab="chart">📈 שווי</button>
       <button data-ctab="badges">🏆 הישגים</button>
+      <button data-ctab="dex">📖 מאגר</button>
     </div>
     <div id="ctab-cards">
     <div class="coll-tools">
@@ -566,6 +573,7 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
     <div id="ctab-sets" hidden></div>
     <div id="ctab-chart" hidden></div>
     <div id="ctab-badges" hidden></div>
+    <div id="ctab-dex" hidden></div>
   </section>
 
   <!-- ===== Capture (add / value scan) ===== -->
@@ -745,7 +753,10 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
     </div>
     <div class="panel">
       <h2>🗑️ איפוס</h2>
-      <p class="muted" id="appVersion" style="margin-bottom:8px"></p>
+      <div class="row" style="margin-bottom:10px">
+        <p class="muted grow" id="appVersion"></p>
+        <button class="btn btn-ghost" id="btnCheckUpdate">🔄 בדוק עדכונים</button>
+      </div>
       <button class="btn btn-ghost" id="btnClearAll" style="color:var(--red)">מחק את כל האוסף</button>
     </div>
   </section>
@@ -759,6 +770,7 @@ section:not([hidden]) { animation: viewIn .28s ease-out; }
   <button data-go="settings"><span class="ico">⚙️</span>הגדרות</button>
 </nav>
 
+<script src="card-features.js"></script>
 <script>
 'use strict';
 
@@ -942,6 +954,7 @@ const VARIANT_LABELS = {
   '1stEditionNormal': 'מהדורה ראשונה',
   unlimitedHolofoil: 'Unlimited – הולו',
   unlimited: 'Unlimited',
+  snapshot: 'מחיר שוק (מהמחירון)',
 };
 const VARIANT_ORDER = ['holofoil', 'normal', 'reverseHolofoil', '1stEditionHolofoil', '1stEditionNormal', 'unlimitedHolofoil', 'unlimited'];
 const CONDITIONS = [
@@ -1708,6 +1721,90 @@ async function rankCandidates(cands, parsed, cardCanvas) {
 }
 
 /* =====================================================================
+   Card database (built weekly by GitHub Actions: data/cards.json + data/features.bin)
+   ===================================================================== */
+let cardDbP = null;
+function loadCardDb() {
+  if (!cardDbP) {
+    cardDbP = (async () => {
+      const [meta, bin] = await Promise.all([
+        fetchJSON('data/cards.json', {}, 60000),
+        fetch('data/features.bin').then(r => { if (!r.ok) throw new Error('no index'); return r.arrayBuffer(); }),
+      ]);
+      if (meta.dim !== CardFeatures.DIM) throw new Error('index version mismatch');
+      const feats = new Int8Array(bin);
+      if (feats.length !== meta.cards.length * meta.dim) throw new Error('index size mismatch');
+      return { ...meta, feats };
+    })();
+    cardDbP.catch(() => { cardDbP = null; });
+  }
+  return cardDbP;
+}
+
+/** A database row as a (brief) card object; full details and live prices are fetched when it is opened. */
+function dbCard(db, row) {
+  const [id, name, number, si, rarity, type, img, usd, eur] = row;
+  const st = db.sets[si] || [];
+  const tcg = usd ? { snapshot: { low: null, mid: null, high: null, market: usd } } : {};
+  return {
+    src: 'ptcg', brief: true, id, name, number, rarity, types: type ? [type] : [],
+    setId: st[0] || '', setName: st[1] || '', setSeries: st[2] || '', setTotal: st[3] || null, releaseDate: st[5] || '',
+    img, imgLarge: img && img.replace(/\.png$/, '_hires.png'),
+    prices: { tcg, cm: eur ? { trend: eur } : null, updated: db.updated, snapshot: true },
+  };
+}
+
+function canvasFeatures(canvas, rotate180) {
+  const c = document.createElement('canvas');
+  c.width = CardFeatures.W; c.height = CardFeatures.H;
+  const g = c.getContext('2d');
+  g.imageSmoothingQuality = 'high';
+  if (rotate180) { g.translate(c.width, c.height); g.rotate(Math.PI); }
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(canvas, 0, 0, c.width, c.height);
+  return CardFeatures.features(g.getImageData(0, 0, c.width, c.height).data);
+}
+
+/** Compare the photo with every card in the database. Returns the best matches [{card, sim}]. */
+async function imageMatch(canvas, topN = 24) {
+  const db = await loadCardDb();
+  const tries = [canvasFeatures(canvas, false), canvasFeatures(canvas, true)]; // also upside-down photos
+  const D = CardFeatures.DIM, n = db.cards.length;
+  const best = [];
+  let minBest = -Infinity;
+  for (let k = 0; k < n; k++) {
+    let sim = -Infinity;
+    for (const f of tries) sim = Math.max(sim, CardFeatures.similarity(f, db.feats, k * D));
+    if (best.length < topN || sim > minBest) {
+      best.push({ k, sim });
+      if (best.length > topN) { best.sort((a, b) => b.sim - a.sim); best.length = topN; }
+      minBest = best.length >= topN ? Math.min(...best.map(b => b.sim)) : -Infinity;
+    }
+  }
+  best.sort((a, b) => b.sim - a.sim);
+  return best.map(b => ({ card: dbCard(db, db.cards[b.k]), sim: b.sim }));
+}
+
+// thresholds for "sure" – tune with the SELF-TEST numbers printed by the index build
+const IMG_SURE_SIM = 0.6, IMG_SURE_MARGIN = 0.08;
+/** Sure match from the picture alone: a high score, and clearly better than any card with other artwork.
+    Reprints share the same picture, so if several sets have it, the collector number (from OCR) decides. */
+function imageConfident(matches, parsed) {
+  if (!matches || !matches.length) return null;
+  const top = matches[0];
+  const same = matches.filter(m => m.card.name === top.card.name && m.sim >= top.sim - 0.03);
+  const other = matches.find(m => !same.includes(m));
+  const clear = top.sim >= IMG_SURE_SIM && (!other || top.sim - other.sim >= IMG_SURE_MARGIN);
+  if (!clear) return null;
+  if (same.length === 1) return top.card;
+  const n = parsed && stripZeros(parsed.number || '').toUpperCase();
+  if (!n) return null;
+  const hit = same.filter(m => stripZeros(m.card.number).toUpperCase() === n &&
+    (!parsed.total || !m.card.setTotal || parseInt(parsed.total, 10) === m.card.setTotal));
+  return hit.length === 1 ? hit[0].card : null;
+}
+
+/* =====================================================================
    Navigation
    ===================================================================== */
 let currentView = 'collection';
@@ -2019,6 +2116,25 @@ function status(text, state = 'busy') {
 async function identify() {
   const token = cap.cardCanvas;
   cap.manualSearch = false;
+  // 1) compare the picture with every card in the database (no text reading needed)
+  let matches = null;
+  const ist = status('משווה את התמונה לכל הקלפים במאגר...');
+  try {
+    matches = await imageMatch(cap.cardCanvas);
+    ist.done(`נמצאו קלפים דומים (התאמה הכי טובה: ${Math.round(Math.max(0, matches[0].sim) * 100)}%)`);
+  } catch (e) {
+    console.warn('image match unavailable', e);
+    ist.done('מאגר התמונות לא זמין כרגע – עובר לקריאת טקסט', false);
+  }
+  if (cap.cardCanvas !== token || cap.manualSearch) return;
+  if (matches && matches.length) {
+    renderCandidates(matches.map(m => ({ card: m.card, score: m.sim })), 'זה הקלף שלך?',
+      'הקלפים הכי דומים לצילום שלך מתוך כל המאגר. לחץ על הקלף שנראה בדיוק כמו שלך (בדוק את סמל הסט והמספר בתחתית).');
+    const sure = imageConfident(matches, null);
+    if (sure) { finishIdentify(sure); return; }
+  }
+
+  // 2) read the text (AI or OCR) – to search, or to tell reprints of the same picture apart
   let parsed = null;
   if (settings.get('anthropicKey')) {
     const st = status('מזהה את הקלף עם בינה מלאכותית...');
@@ -2031,26 +2147,62 @@ async function identify() {
       st.done('הזיהוי החכם לא הצליח, עובר לקריאת טקסט', false);
     }
   }
-  if (cap.cardCanvas !== token) return;
+  if (cap.cardCanvas !== token || cap.manualSearch) return;
   if (!parsed || (!parsed.name && !parsed.number)) {
-    const st = status('קורא את הטקסט על הקלף (בפעם הראשונה זה לוקח קצת זמן)...');
+    const st = status(matches ? 'קורא את המספר על הקלף כדי לדייק...' : 'קורא את הטקסט על הקלף (בפעם הראשונה זה לוקח קצת זמן)...');
     ocrProgressEl = $('#identStatus li:last-child span:last-child');
-    $('#candTitle').textContent = 'לא רוצה לחכות? כתוב את שם הקלף (באנגלית) ולחץ חפש ⬇️';
+    if (!matches) $('#candTitle').textContent = 'לא רוצה לחכות? כתוב את שם הקלף (באנגלית) ולחץ חפש ⬇️';
     try {
       parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(50000).then(() => { resetOcrWorker(); throw new Error('OCR timeout'); })]);
       const bits = [parsed.name, parsed.number && ('#' + parsed.number + (parsed.total ? '/' + parsed.total : ''))].filter(Boolean).join(' ');
-      st.done(bits ? `קראתי: ${bits}` : 'לא הצלחתי לקרוא את השם – אפשר להקליד למטה', !!bits);
+      st.done(bits ? `קראתי: ${bits}` : 'לא הצלחתי לקרוא את הטקסט', !!bits);
     } catch (e) {
       console.warn('OCR failed', e);
-      st.done('קריאת הטקסט לא זמינה כרגע – הקלד את שם הקלף למטה', false);
+      st.done(matches ? 'קריאת הטקסט לא זמינה – בחר מהרשימה' : 'קריאת הטקסט לא זמינה כרגע – הקלד את שם הקלף למטה', false);
       parsed = { name: '', number: '', total: '' };
     }
     ocrProgressEl = null;
   }
   if (cap.cardCanvas !== token || cap.manualSearch) return;
+  cap.parsed = parsed;
   $('#identQuery').value = [parsed.name, parsed.number ? parsed.number + (parsed.total ? '/' + parsed.total : '') : ''].filter(Boolean).join(' ');
+
+  if (matches && matches.length) {
+    // the collector number moves the matching reprint to the top
+    const n = stripZeros(parsed.number || '').toUpperCase();
+    const t = parseInt(parsed.total, 10);
+    const ranked = matches.map(m => ({ card: m.card, score: m.sim +
+      (n && stripZeros(m.card.number).toUpperCase() === n ? 0.15 : 0) + (t && m.card.setTotal === t ? 0.1 : 0) +
+      (parsed.name ? 0.1 * nameSimilarity(parsed.name, m.card.name) : 0) })).sort((x, y) => y.score - x.score);
+    renderCandidates(ranked, 'זה הקלף שלך?', 'הקלפים הכי דומים לצילום שלך. לחץ על הקלף שנראה בדיוק כמו שלך.');
+    const sure = imageConfident(matches, parsed);
+    if (sure) finishIdentify(sure);
+    else if (autoMode()) $('#candTitle').textContent = '🤔 לא הייתי בטוח מספיק – בחר את הקלף שלך:';
+    return;
+  }
   if (parsed.name || parsed.number) await runSearch(parsed);
   else $('#identQuery').focus();
+}
+
+/** Sure about the card: in "add" mode with auto-add it goes straight in, otherwise it is just marked as the best match. */
+function finishIdentify(card) {
+  if (autoMode()) showResult(card, { auto: true });
+  else $('#candTitle').textContent = '✅ מצאתי! זה הקלף הראשון ברשימה:';
+}
+
+function renderCandidates(shown, title, note) {
+  shown = shown.slice(0, 24);
+  const grid = $('#candGrid');
+  $('#candTitle').textContent = title;
+  grid.innerHTML = shown.map((x, i) => `
+    <div class="cand ${i === 0 ? 'best' : ''}" data-i="${i}">
+      ${i === 0 ? '<span class="badge">הכי מתאים</span>' : ''}
+      ${ownedKeys().has(ownKey(x.card)) ? '<span class="badge owned">✔ באוסף</span>' : ''}
+      <img src="${esc(x.card.img || '')}" alt="${esc(x.card.name)}" crossorigin="anonymous" loading="lazy">
+      <div class="cap"><b>${esc(x.card.name)}</b>${esc(x.card.setName)} · #${esc(x.card.number)}${x.card.setTotal ? '/' + esc(x.card.setTotal) : ''}</div>
+    </div>`).join('');
+  $$('.cand', grid).forEach(el => el.addEventListener('click', () => showResult(shown[+el.dataset.i].card)));
+  $('#candNote').textContent = note || '';
 }
 
 $('#identSearchForm').addEventListener('submit', (e) => {
@@ -2083,16 +2235,7 @@ async function runSearch(parsed) {
   grid.innerHTML = '<div class="row muted" style="grid-column:1/-1"><span class="spinner"></span> משווה לתמונה שלך...</div>';
   const ranked = await rankCandidates(cands, parsed, cap.cardCanvas);
   if (seq !== searchSeq) return;
-  const shown = ranked.slice(0, 24);
-  $('#candTitle').textContent = 'בחר את הקלף שלך:';
-  grid.innerHTML = shown.map((x, i) => `
-    <div class="cand ${i === 0 ? 'best' : ''}" data-i="${i}">
-      ${i === 0 ? '<span class="badge">הכי מתאים</span>' : ''}
-      <img src="${esc(x.card.img || '')}" alt="${esc(x.card.name)}" crossorigin="anonymous" loading="lazy">
-      <div class="cap"><b>${esc(x.card.name)}</b>${esc(x.card.setName)} · #${esc(x.card.number)}${x.card.setTotal ? '/' + esc(x.card.setTotal) : ''}</div>
-    </div>`).join('');
-  $$('.cand', grid).forEach(el => el.addEventListener('click', () => showResult(shown[+el.dataset.i].card)));
-  $('#candNote').textContent = `נמצאו ${cands.length} קלפים אפשריים. לחץ על הקלף שנראה בדיוק כמו שלך (שים לב לסמל הסט ולמספר בתחתית).`;
+  renderCandidates(ranked, 'בחר את הקלף שלך:', `נמצאו ${cands.length} קלפים אפשריים. לחץ על הקלף שנראה בדיוק כמו שלך (שים לב לסמל הסט ולמספר בתחתית).`);
   if (autoMode() && cap.cardCanvas && !cap.manualSearch) {
     const sure = confidentMatch(ranked, parsed);
     if (sure) showResult(sure, { auto: true });
@@ -2163,7 +2306,18 @@ function confidentMatch(ranked, parsed) {
 let resultSeq = 0;
 async function showResult(card, opts = {}) {
   const seq = ++resultSeq;
-  if (!hasPrices(card) && card.src !== 'tcgdex') {
+  if (card.brief) {
+    showStep('stepResult');
+    $('#stepResult').innerHTML = `<div class="panel"><div class="row muted"><span class="spinner"></span> טוען פרטים ומחיר עדכני...</div>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px" id="btnEnrichCancel">↩️ חזרה</button></div>`;
+    $('#btnEnrichCancel').addEventListener('click', () => { resultSeq++; showStep('stepIdentify'); });
+    try {
+      const full = await refetchCard(card);
+      // keep the weekly price list when no live price could be found
+      card = hasPrices(full) || !hasPrices(card) ? { ...full, brief: false } : { ...full, prices: card.prices, brief: false };
+    } catch (e) { card = { ...card, brief: false }; }
+    if (seq !== resultSeq) return;
+  } else if (!hasPrices(card) && card.src !== 'tcgdex') {
     showStep('stepResult');
     $('#stepResult').innerHTML = `<div class="panel"><div class="row muted"><span class="spinner"></span> מחפש מחיר במקור נוסף...</div>
       <button class="btn btn-ghost btn-block" style="margin-top:12px" id="btnEnrichCancel">↩️ חזרה</button></div>`;
@@ -2348,6 +2502,20 @@ function confetti() {
   document.body.appendChild(box);
   setTimeout(() => box.remove(), 2600);
 }
+const ownKey = (card) => card.src === 'tcgdex' || !card.id ? 'n:' + normName(card.setName) + '|' + numKey(card.number) : 'i:' + card.id;
+let ownedCache = null;
+function ownedKeys() {
+  if (!ownedCache) {
+    ownedCache = new Set();
+    for (const it of collectionCache) {
+      ownedCache.add(ownKey(it.card));
+      ownedCache.add('n:' + normName(it.card.setName) + '|' + numKey(it.card.number));
+    }
+  }
+  return ownedCache;
+}
+const isOwned = (card) => ownedKeys().has(ownKey(card)) || ownedKeys().has('n:' + normName(card.setName) + '|' + numKey(card.number));
+
 // Pokémon energy types -> colour + icon (used for the card tiles)
 const TYPE_STYLE = {
   Grass: ['#4caf50', '🌿'], Fire: ['#f4511e', '🔥'], Water: ['#1e88e5', '💧'], Lightning: ['#fbc02d', '⚡'],
@@ -2390,6 +2558,7 @@ const itemValue = (it) => { const e = estimate(it.card, it.variant, it.condition
 
 async function renderCollection() {
   collectionCache = await db.all();
+  ownedCache = null;
   const items = collectionCache;
   const total = items.reduce((s, it) => s + it.qty, 0);
   const value = items.reduce((s, it) => s + itemValue(it), 0);
@@ -2924,13 +3093,14 @@ $('#collTabs').addEventListener('click', (e) => {
   if (!b) return;
   collTab = b.dataset.ctab;
   $$('#collTabs button').forEach(x => x.classList.toggle('on', x === b));
-  ['cards', 'sets', 'chart', 'badges'].forEach(t => { $('#ctab-' + t).hidden = t !== collTab; });
+  ['cards', 'sets', 'chart', 'badges', 'dex'].forEach(t => { $('#ctab-' + t).hidden = t !== collTab; });
   renderCollection();
 });
 function renderCollTab() {
   if (collTab === 'sets') renderSets();
   if (collTab === 'chart') renderChart();
   if (collTab === 'badges') renderBadges();
+  if (collTab === 'dex') renderDex();
 }
 
 /* =====================================================================
@@ -3043,6 +3213,91 @@ async function openSet(set) {
     }));
   };
   render();
+}
+
+/* =====================================================================
+   📖 The whole card database – browse every set, owned cards marked ✔
+   ===================================================================== */
+const dexState = { q: '', set: null, sort: 'number', filter: 'all' };
+async function renderDex() {
+  const box = $('#ctab-dex');
+  let db;
+  try { db = await loadCardDb(); }
+  catch (e) {
+    box.innerHTML = '<div class="panel empty"><div class="big">📖</div><p class="muted">המאגר עוד לא זמין (הוא נבנה אוטומטית פעם בשבוע). נסה שוב מאוחר יותר.</p></div>';
+    return;
+  }
+  const owned = (row) => isOwned(dbCard(db, row));
+  if (dexState.set === null && !dexState.q) {
+    // sets list, newest first, with how many of each you have
+    const counts = new Map();
+    db.cards.forEach(r => { const c = counts.get(r[3]) || { all: 0, have: 0 }; c.all++; if (owned(r)) c.have++; counts.set(r[3], c); });
+    const order = db.sets.map((st, i) => i).filter(i => counts.has(i)).sort((a, b) => String(db.sets[b][5]).localeCompare(String(db.sets[a][5])));
+    const haveTotal = [...counts.values()].reduce((s, c) => s + c.have, 0);
+    box.innerHTML = `<div class="panel">
+        <div class="hero-val" dir="ltr" style="text-align:right">${haveTotal.toLocaleString('he-IL')} / ${db.cards.length.toLocaleString('he-IL')}</div>
+        <div class="muted">קלפים שונים שיש לך מתוך כל המאגר · מחירון מ-${esc(new Date(db.updated).toLocaleDateString('he-IL'))}</div>
+        <input type="search" id="dexQ" placeholder="🔍 חיפוש בכל הקלפים (באנגלית, למשל Charizard)" style="margin-top:12px" dir="ltr" value="${esc(dexState.q)}">
+      </div>` + order.map(i => {
+        const st = db.sets[i], c = counts.get(i), pct = Math.round(c.have / c.all * 100);
+        return `<div class="set-row" data-dset="${i}">
+          <div class="s-info"><div class="s-name">${esc(st[1])}</div>
+            <div class="s-sub">${esc(st[2] || '')} · ${String(st[5] || '').slice(0, 4)} · יש לך ${c.have} מתוך ${c.all}</div>
+            <div class="progress ${pct >= 100 ? 'done' : ''}"><div style="width:${pct}%"></div></div></div>
+          <div class="s-pct">${c.have ? (pct >= 100 ? '🏆' : pct + '%') : ''}</div></div>`;
+      }).join('');
+    $$('[data-dset]', box).forEach(el => el.addEventListener('click', () => { dexState.set = +el.dataset.dset; dexState.filter = 'all'; renderDex(); window.scrollTo(0, 0); }));
+  } else {
+    // one set, or search results
+    const q = normName(dexState.q);
+    let rows = dexState.q ? db.cards.filter(r => normName(r[1]).includes(q)) : db.cards.filter(r => r[3] === dexState.set);
+    const total = rows.length, have = rows.filter(owned).length;
+    if (dexState.filter === 'have') rows = rows.filter(owned);
+    if (dexState.filter === 'missing') rows = rows.filter(r => !owned(r));
+    const price = (r) => Math.max(r[7] * rates.USD, r[8] * rates.EUR);
+    const nk = (r) => { const n = parseInt(r[2], 10); return isNaN(n) ? 1e6 : n; };
+    if (dexState.sort === 'price') rows.sort((a, b) => price(b) - price(a));
+    else if (!dexState.q) rows.sort((a, b) => nk(a) - nk(b));
+    const shown = rows.slice(0, 300);
+    const title = dexState.q ? `חיפוש: "${esc(dexState.q)}"` : esc(db.sets[dexState.set][1]);
+    box.innerHTML = `<div class="panel">
+        <button class="btn btn-ghost" id="dexBack">→ כל הסטים</button>
+        <div class="card-title" style="margin-top:10px">${title}</div>
+        <div class="card-meta">יש לך ${have} מתוך ${total}</div>
+        <div class="filter-row">
+          <button data-f="all" class="${dexState.filter === 'all' ? 'on' : ''}">הכל</button>
+          <button data-f="have" class="${dexState.filter === 'have' ? 'on' : ''}">✔ יש לי</button>
+          <button data-f="missing" class="${dexState.filter === 'missing' ? 'on' : ''}">חסרים</button>
+          <button data-sort class="${dexState.sort === 'price' ? 'on' : ''}">💰 לפי מחיר</button>
+        </div>
+      </div>
+      <div class="set-grid dex-grid">${shown.map((r, k) => {
+        const own = owned(r), pr = price(r);
+        return `<div class="set-card ${own ? '' : 'missing'}" data-k="${k}">
+          <img src="${esc(r[6])}" alt="${esc(r[1])}" loading="lazy">${own ? '<span class="ok">✔</span>' : ''}
+          <span class="n">${esc(r[2])}</span>${pr ? `<span class="pr">${fmtILS(pr)}</span>` : ''}</div>`;
+      }).join('')}</div>
+      ${rows.length > shown.length ? `<p class="muted" style="margin-top:10px">מוצגים ${shown.length} מתוך ${rows.length} – חפש כדי לצמצם.</p>` : ''}`;
+    $('#dexBack').addEventListener('click', () => { dexState.set = null; dexState.q = ''; renderDex(); });
+    $$('[data-f]', box).forEach(b2 => b2.addEventListener('click', () => { dexState.filter = b2.dataset.f; renderDex(); }));
+    $('[data-sort]', box).addEventListener('click', () => { dexState.sort = dexState.sort === 'price' ? 'number' : 'price'; renderDex(); });
+    $$('.set-card', box).forEach(el => el.addEventListener('click', () => {
+      const card = dbCard(db, shown[+el.dataset.k]);
+      const it = collectionCache.find(x => ownKey(x.card) === ownKey(card) || ('n:' + normName(x.card.setName) + '|' + numKey(x.card.number)) === ('n:' + normName(card.setName) + '|' + numKey(card.number)));
+      if (it) { openItem(it.uid); return; }
+      captureMode = 'value';
+      showView('capture');
+      $('#capTitle').textContent = '📖 קלף מהמאגר';
+      $('#capSub').textContent = '';
+      cap.cardCanvas = null; cap.aiFinish = null;
+      showResult(card);
+    }));
+  }
+  const qi = $('#dexQ');
+  if (qi) {
+    let t = null;
+    qi.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { dexState.q = qi.value.trim(); if (dexState.q.length >= 2) { dexState.set = null; renderDex(); } }, 350); });
+  }
 }
 
 /* =====================================================================
@@ -3422,7 +3677,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-9';
+const APP_VERSION = '2026.10.22-11';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;
@@ -3440,7 +3695,55 @@ if (settings.get('ghToken') && lsGet('nitai-cloud', {}).dirty) setTimeout(() => 
 /* ---- Install as an app on the phone ---- */
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 let installPrompt = null;
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch((e) => console.warn('sw', e));
+/* ---- Updates: always pick up a new version quickly ---- */
+let swReg = null;
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then((r) => { swReg = r; r.update().catch(() => {}); })
+    .catch((e) => console.warn('sw', e));
+  // a new service worker took over -> reload once so the new code runs
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && swReg) swReg.update().catch(() => {}); });
+}
+
+/** Version on the server (read from index.html without any cache). */
+async function serverVersion() {
+  const res = await fetch('index.html?v=' + Date.now(), { cache: 'no-store' });
+  const m = (await res.text()).match(/const APP_VERSION = '([^']+)'/);
+  return m ? m[1] : null;
+}
+async function forceUpdate() {
+  try { if (swReg) await swReg.unregister(); } catch (e) {}
+  try { for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+  location.replace(location.pathname + '?u=' + Date.now());
+}
+// on start: if the server already has a newer version, switch to it (once per session)
+setTimeout(async () => {
+  if (!navigator.onLine) return;
+  try {
+    const v = await serverVersion();
+    if (v && v !== APP_VERSION && sessionStorage.getItem('nitai-updated-to') !== v) {
+      sessionStorage.setItem('nitai-updated-to', v);
+      toast('⬆️ מעדכן לגרסה חדשה...');
+      setTimeout(forceUpdate, 900);
+    }
+  } catch (e) { /* offline or blocked – try next time */ }
+}, 1500);
+$('#btnCheckUpdate').addEventListener('click', async (e) => {
+  e.target.disabled = true;
+  try {
+    const v = await serverVersion();
+    if (v && v !== APP_VERSION) { toast('⬆️ נמצאה גרסה ' + v + ' – מעדכן...'); setTimeout(forceUpdate, 700); return; }
+    toast(v ? '✅ יש לך את הגרסה האחרונה' : 'לא הצלחתי לבדוק – אין אינטרנט?');
+  } catch (err) { toast('לא הצלחתי לבדוק – אין אינטרנט?'); }
+  e.target.disabled = false;
+});
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   installPrompt = e;

@@ -417,13 +417,17 @@ function buildBg() {
   // neon sign
   const ny = Math.max(150 * S, H * 0.24);
   c.save();
-  c.font = `900 ${Math.round(46 * S)}px Rubik, Arial, sans-serif`;
+  const sign = 'הפיצה של ניתאי';
+  let fs = Math.round(46 * S);
+  c.font = `900 ${fs}px Rubik, Arial, sans-serif`;
+  const sw = c.measureText(sign).width;
+  if (sw > W * 0.86) { fs = Math.floor(fs * W * 0.86 / sw); c.font = `900 ${fs}px Rubik, Arial, sans-serif`; }
   c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'rtl';
   c.shadowColor = '#ff4f8b'; c.shadowBlur = 24 * S;
   c.strokeStyle = 'rgba(255,120,170,.55)'; c.lineWidth = 3 * S;
-  c.strokeText('פיצה', W / 2, ny);
+  c.strokeText(sign, W / 2, ny);
   c.shadowBlur = 10 * S; c.fillStyle = 'rgba(255,190,215,.32)';
-  c.fillText('פיצה', W / 2, ny);
+  c.fillText(sign, W / 2, ny);
   c.restore();
 
   // floor: checkered tiles

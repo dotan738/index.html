@@ -51,15 +51,23 @@ const num = (v) => (typeof v === 'number' && isFinite(v) && v > 0 ? Math.round(v
 
 /* ---------- 1. all cards + sets from the Pokémon TCG API ---------- */
 console.log('Fetching sets...');
-const setsRes = await getJSON(`${API}/sets?pageSize=250&orderBy=releaseDate`);
-const sets = setsRes.data.map((s) => ({ id: s.id, name: s.name, series: s.series, printed: s.printedTotal, total: s.total, date: s.releaseDate, logo: s.images && s.images.logo }));
+const setRows = [];
+for (let page = 1; ; page++) {
+  const d = await getJSON(`${API}/sets?page=${page}&pageSize=250&orderBy=releaseDate`);
+  setRows.push(...d.data);
+  if (!d.data.length || setRows.length >= (d.totalCount || 0)) break;
+}
+const sets = setRows.map((s) => ({ id: s.id, name: s.name, series: s.series, printed: s.printedTotal, total: s.total, date: s.releaseDate, logo: s.images && s.images.logo }));
 const setIndex = new Map(sets.map((s, i) => [s.id, i]));
 console.log(`  ${sets.length} sets`);
 
 console.log('Fetching cards...');
 const cards = [];
+let expected = 0, seen = 0;
 for (let page = 1; ; page++) {
   const d = await getJSON(`${API}/cards?page=${page}&pageSize=250&orderBy=set.releaseDate,number&select=id,name,number,rarity,types,supertype,set,images,tcgplayer,cardmarket`);
+  expected = d.totalCount || expected;
+  seen += d.data.length;
   for (const c of d.data) {
     if (!c.images || !c.images.small || !setIndex.has(c.set.id)) continue;
     // price snapshot: best TCGplayer market price (USD) and Cardmarket trend (EUR)
@@ -70,10 +78,12 @@ for (let page = 1; ; page++) {
       type: (c.types && c.types[0]) || (c.supertype === 'Trainer' ? 'Trainer' : c.supertype === 'Energy' ? 'Energy' : ''), img: c.images.small, usd, eur });
   }
   process.stdout.write(`\r  page ${page}: ${cards.length} cards`);
-  if (d.data.length < 250) break;
+  if (!d.data.length || (expected && seen >= expected) || (!expected && d.data.length < 250)) break;
   await sleep(150);
 }
 console.log('');
+// Never replace a good database with a partial one (API hiccup / outage): stop without writing.
+if (expected && seen < expected * 0.98) { console.error(`ABORT: got ${seen} of ${expected} cards`); process.exit(1); }
 
 /* ---------- 2. fingerprints (reuse the previous index where possible) ---------- */
 const prev = new Map();
@@ -111,13 +121,15 @@ await pool(todo, 24, async (i) => {
   if (++done % 500 === 0) console.log(`  ${done}/${todo.length}`);
 });
 console.log(`  done, ${failed} failed`);
+if (todo.length > 100 && failed > todo.length * 0.02) { console.error(`ABORT: ${failed} of ${todo.length} images failed`); process.exit(1); }
 
-// cards whose image could not be read are left out
+// cards whose image could not be read are left out (a few at most – checked above)
 const okIdx = cards.map((c, i) => i).filter((i) => !cards[i].failed);
 const outFeat = new Uint8Array(okIdx.length * CF.DIM);
 okIdx.forEach((i, k) => outFeat.set(features.subarray(i * CF.DIM, (i + 1) * CF.DIM), k * CF.DIM));
 const outCards = okIdx.map((i) => { const c = cards[i]; return [c.id, c.name, c.number, c.set, c.rarity, c.type, c.img, c.usd, c.eur]; });
 
+if (prev.size && outCards.length < prev.size * 0.95) { console.error(`ABORT: ${outCards.length} cards, previous index had ${prev.size}`); process.exit(1); }
 await fs.mkdir(DATA, { recursive: true });
 await fs.writeFile(path.join(DATA, 'features.bin'), outFeat);
 await fs.writeFile(path.join(DATA, 'cards.json'), JSON.stringify({

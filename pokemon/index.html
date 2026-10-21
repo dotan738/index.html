@@ -940,6 +940,8 @@ const db = (() => {
     put: (item) => tx('readwrite', s => s.put(item)).then(r => { onDbChange(); return r; }),
     del: (uid) => tx('readwrite', s => s.delete(uid)).then(r => { onDbChange(); return r; }),
     clear: () => tx('readwrite', s => s.clear()).then(r => { onDbChange(); return r; }),
+    // all or nothing: if anything fails, the old collection stays as it was
+    replaceAll: (items) => tx('readwrite', s => { s.clear(); items.forEach(it => s.put(it)); }).then(r => { onDbChange(); return r; }),
   };
 })();
 
@@ -2894,7 +2896,7 @@ $('#btnSaveSettings').addEventListener('click', () => {
 $('#btnRates').addEventListener('click', async () => { await refreshRates(true); toast(rates.live ? 'השערים עודכנו' : 'לא הצלחתי לעדכן שערים'); });
 $('#btnExport').addEventListener('click', async () => {
   const items = await db.all();
-  const blob = new Blob([JSON.stringify({ app: 'nitai-pokedex', version: 1, exportedAt: new Date().toISOString(), items })], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'nitai-pokedex', version: 2, exportedAt: new Date().toISOString(), ...backupExtras(), items })], { type: 'application/json' });
   const fileName = `pokedex-${new Date().toISOString().slice(0, 10)}.json`;
   try {
     const file = new File([blob], fileName, { type: 'application/json' });
@@ -2919,15 +2921,20 @@ $('#fileImport').addEventListener('change', async (e) => {
     const data = JSON.parse(await f.text());
     const items = Array.isArray(data) ? data : data.items;
     if (!Array.isArray(items)) throw new Error('format');
-    let n = 0;
-    for (const it of items) {
-      if (it && it.uid && it.card && it.card.id) {
-        it.qty = Math.max(1, parseInt(it.qty, 10) || 1);
-        if (it.photo && !/^data:image\/(jpeg|png|webp);base64,/.test(it.photo)) it.photo = null;
-        await db.put(it); n++;
-      }
-    }
-    toast(`יובאו ${n} קלפים`);
+    const good = items.filter(it => it && it.uid && it.card && it.card.id).map(it => ({
+      ...it,
+      qty: Math.max(1, parseInt(it.qty, 10) || 1),
+      photo: it.photo && /^data:image\/(jpeg|png|webp);base64,/.test(it.photo) ? it.photo : null,
+    }));
+    // merge into the collection in one go (all or nothing)
+    const current = await db.all();
+    const byUid = new Map(current.map(it => [it.uid, it]));
+    good.forEach(it => byUid.set(it.uid, it));
+    await db.replaceAll([...byUid.values()]);
+    if (!Array.isArray(data)) restoreExtras({ ...data, profile: data.profile || getProfile() });
+    applyProfile();
+    renderCollection();
+    toast(`יובאו ${good.length} קלפים`);
   } catch (err) {
     toast('קובץ הגיבוי לא תקין');
   }
@@ -3551,8 +3558,7 @@ async function buildBackupFiles() {
   for (const it of items) if (it.photo) buckets[parseInt(fnv(it.uid), 36) % PHOTO_BUCKETS][it.uid] = it.photo;
   files['pokedex.json'] = JSON.stringify({
     app: 'nitai-pokedex', version: 2, updatedAt: new Date().toISOString(),
-    profile: getProfile(), stats: lsGet('nitai-stats', {}), badges: lsGet('nitai-badges', {}),
-    history: lsGet('nitai-history', []), trade,
+    ...backupExtras(),
     items: items.map(({ photo, ...rest }) => rest),
   });
   buckets.forEach((b, i) => { files[`photos-${String(i).padStart(2, '0')}.json`] = JSON.stringify(b); });
@@ -3618,6 +3624,18 @@ async function findBackupGist() {
   return g ? ghFetch(`${GIST_API}/${g.id}`) : null;
 }
 
+/** Profile, achievements, history, stats and the open trade – part of every backup. */
+function backupExtras() {
+  return { profile: getProfile(), stats: lsGet('nitai-stats', {}), badges: lsGet('nitai-badges', {}), history: lsGet('nitai-history', []), trade };
+}
+function restoreExtras(meta) {
+  if (meta.profile) lsSet('nitai-profile', meta.profile);
+  if (meta.stats) lsSet('nitai-stats', meta.stats);
+  if (meta.badges) lsSet('nitai-badges', meta.badges);
+  if (meta.history) lsSet('nitai-history', meta.history);
+  if (meta.trade) { trade.give = meta.trade.give || []; trade.get = meta.trade.get || []; saveTrade(); }
+}
+
 async function cloudRestore() {
   const g = await findBackupGist();
   if (!g) { toast('לא נמצא גיבוי בענן'); return false; }
@@ -3629,13 +3647,8 @@ async function cloudRestore() {
   }
   cloud.restoring = true;
   try {
-    await db.clear();
-    for (const it of meta.items || []) await db.put({ ...it, photo: photos[it.uid] || null });
-    if (meta.profile) lsSet('nitai-profile', meta.profile);
-    if (meta.stats) lsSet('nitai-stats', meta.stats);
-    if (meta.badges) lsSet('nitai-badges', meta.badges);
-    if (meta.history) lsSet('nitai-history', meta.history);
-    if (meta.trade) { trade.give = meta.trade.give || []; trade.get = meta.trade.get || []; saveTrade(); }
+    await db.replaceAll((meta.items || []).map(it => ({ ...it, photo: photos[it.uid] || null })));
+    restoreExtras(meta);
     const files = await buildBackupFiles();
     lsSet('nitai-cloud', { gistId: g.id, lastBackup: Date.now(), dirty: false, hashes: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fnv(v)])) });
   } finally {
@@ -3677,7 +3690,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.22-11';
+const APP_VERSION = '2026.10.22-12';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

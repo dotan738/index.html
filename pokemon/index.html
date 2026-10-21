@@ -1884,7 +1884,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
   $('#btnInstall').hidden = false;
 });
 window.addEventListener('appinstalled', () => { $('#btnInstall').hidden = true; toast('האפליקציה הותקנה! 🎉'); });
-if (!isStandalone() && /iphone|ipad|ipod/i.test(navigator.userAgent)) $('#btnInstall').hidden = false;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInAppBrowser = /WhatsApp|FBAN|FBAV|Instagram|Line\/|; wv\)/i.test(navigator.userAgent);
+if (!isStandalone()) $('#btnInstall').hidden = false;
 $('#btnInstall').addEventListener('click', async () => {
   if (installPrompt) {
     installPrompt.prompt();
@@ -1893,17 +1895,25 @@ $('#btnInstall').addEventListener('click', async () => {
     installPrompt = null;
     return;
   }
+  const steps = isInAppBrowser ? `
+      <li>הדף נפתח בתוך וואטסאפ – משם אי אפשר להתקין</li>
+      <li>לחץ על <b>⋮</b> (שלוש נקודות) למעלה</li>
+      <li>בחר <b>"פתח ב-Chrome"</b> / "פתח בדפדפן"</li>
+      <li>ב-Chrome לחץ שוב על <b>📲 התקן</b></li>` : isIOS ? `
+      <li>פתח את הדף הזה ב-<b>Safari</b></li>
+      <li>לחץ על כפתור השיתוף <b>⬆️</b> בתחתית המסך</li>
+      <li>בחר <b>"הוסף למסך הבית"</b></li>
+      <li>לחץ <b>"הוסף"</b> – והפוקדקס יופיע עם אייקון כמו אפליקציה רגילה!</li>` : `
+      <li>ודא שהדף פתוח ב-<b>Chrome</b></li>
+      <li>לחץ על <b>⋮</b> (שלוש נקודות) בפינה העליונה</li>
+      <li>בחר <b>"התקנת אפליקציה"</b> או <b>"הוספה למסך הבית"</b></li>
+      <li>לחץ <b>"התקנה"</b> – והפוקדקס יופיע עם אייקון כמו אפליקציה רגילה!</li>`;
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
   bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
     <button class="close" aria-label="סגור">✕</button>
     <h2 style="margin-bottom:12px">📲 התקנה בטלפון</h2>
-    <ol style="padding-right:20px;line-height:2">
-      <li>פתח את הדף הזה ב-<b>Safari</b></li>
-      <li>לחץ על כפתור השיתוף <b>⬆️</b> בתחתית המסך</li>
-      <li>בחר <b>"הוסף למסך הבית"</b></li>
-      <li>לחץ <b>"הוסף"</b> – והפוקדקס יופיע עם אייקון כמו אפליקציה רגילה!</li>
-    </ol>
+    <ol style="padding-right:20px;line-height:2">${steps}</ol>
   </div>`;
   const close = () => bg.remove();
   bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('.close')) close(); });

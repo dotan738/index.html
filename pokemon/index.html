@@ -443,6 +443,56 @@ body {
 .cand { border-radius: 14px; box-shadow: 0 3px 10px rgba(29,44,94,.10); transition: transform .12s; }
 .cand:active { transform: scale(0.97); }
 .cand.best { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,157,85,.25), 0 6px 16px rgba(29,44,94,.15); }
+/* ================= Design upgrade 2 ================= */
+section:not([hidden]) { animation: viewIn .28s ease-out; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } }
+.app-header .pokeball { animation: spinIn .9s cubic-bezier(.2,.8,.2,1); }
+@keyframes spinIn { from { transform: rotate(-360deg) scale(.6); } }
+
+/* type colour: thin coloured frame + glow */
+.tile { --type: #c5cedf; }
+.tile:not(.shiny) { background: linear-gradient(180deg, var(--type) 0 6px, #fff 6px); }
+.tile .img-wrap { position: relative; border-radius: 10px; overflow: hidden; }
+.tile .info { position: relative; }
+.tile .type-dot {
+  position: absolute; left: 4px; top: -16px; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--type); display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+  border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+.tile .rarity {
+  position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(15, 20, 40, .72); color: var(--yellow);
+  font-size: 0.68rem; font-weight: 900; padding: 2px 7px; border-radius: 8px; letter-spacing: 1px;
+}
+.tile .qty { z-index: 2; }
+
+/* holographic shine sweeping across shiny cards */
+.tile.shiny .img-wrap::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.55) 45%, rgba(255,215,255,.35) 50%, transparent 65%);
+  background-size: 250% 100%; animation: holo 3.5s ease-in-out infinite; mix-blend-mode: soft-light;
+}
+@keyframes holo { 0% { background-position: 120% 0; } 60%, 100% { background-position: -120% 0; } }
+.tile.shiny { animation: holoFrame 6s linear infinite; background-size: 300% 300%; }
+@keyframes holoFrame { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+/* empty state */
+.empty .big-ball { width: 84px; height: 84px; margin: 0 auto; animation: wobble 2.4s ease-in-out infinite; }
+.empty .big-ball::after { width: 22px; height: 22px; }
+.empty .big-ball::before { border-radius: 999px 999px 0 0; }
+@keyframes wobble { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(-14deg); } 80% { transform: rotate(12deg); } 90% { transform: rotate(-6deg); } }
+
+/* confetti */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 500; overflow: hidden; }
+.confetti span { position: absolute; top: -30px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(540deg); opacity: .2; } }
+
+/* result screen: the official card floats a little */
+.result-imgs figure:last-child img { animation: float 3.2s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
 </head>
 <body>
@@ -485,7 +535,7 @@ body {
     </div>
     <div id="collGrid" class="grid"></div>
     <div id="collEmpty" class="empty panel" hidden>
-      <div class="big">📭</div>
+      <div class="pokeball big-ball" aria-hidden="true"></div>
       <h3>האוסף עוד ריק</h3>
       <p class="muted">צלם את הקלף הראשון שלך ונתחיל!</p>
       <button class="btn btn-red" style="margin-top:14px" data-go="add">📷 הוסף קלף ראשון</button>
@@ -700,6 +750,7 @@ const num = (v) => (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
 
 function fmtILS(v) {
   if (v == null || !isFinite(v)) return '—';
+  if (v === 0) return '₪0';
   const digits = v < 10 ? 2 : 0;
   return '₪' + v.toLocaleString('he-IL', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
@@ -886,7 +937,7 @@ const CONDITIONS = [
 ];
 
 const PTCG = 'https://api.pokemontcg.io/v2/cards';
-const PTCG_SELECT = 'id,name,number,rarity,supertype,set,images,tcgplayer,cardmarket';
+const PTCG_SELECT = 'id,name,number,rarity,supertype,types,set,images,tcgplayer,cardmarket';
 
 function ptcgHeaders() {
   const k = settings.get('ptcgKey');
@@ -913,6 +964,7 @@ function normalizePtcg(c) {
     name: c.name,
     number: c.number,
     rarity: c.rarity || '',
+    types: Array.isArray(c.types) ? c.types : [],
     setName: (c.set && c.set.name) || '',
     setSeries: (c.set && c.set.series) || '',
     setId: (c.set && c.set.id) || '',
@@ -967,6 +1019,7 @@ function normalizeTcgdex(c) {
     name: c.name,
     number: c.localId,
     rarity: c.rarity || '',
+    types: Array.isArray(c.types) ? c.types : [],
     setName: (c.set && c.set.name) || '',
     setSeries: '',
     setId: (c.set && c.set.id) || '',
@@ -2128,6 +2181,7 @@ function renderResult(card) {
     try {
       await addToCollection(card, variant, condition, qty, cap.cardCanvas);
       toast(`✨ ${card.name} נוסף לאוסף!`);
+      confetti();
       e.target.textContent = '✔ נוסף לאוסף';
     } catch (err) {
       console.error(err);
@@ -2170,6 +2224,54 @@ async function addToCollection(card, variant, condition, qty, canvas) {
 /* =====================================================================
    Collection view
    ===================================================================== */
+function countUp(el, to) {
+  const from = parseFloat(el.dataset.v || '0');
+  el.dataset.v = to;
+  if (Math.abs(to - from) < 0.01 || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmtILS(to); return; }
+  const t0 = performance.now(), dur = 700;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmtILS(from + (to - from) * e);
+    if (k < 1 && el.dataset.v == to) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  const bits = ['⭐', '✨', '⚡', '🎉', '🔴', '🟡', '🔵'];
+  for (let i = 0; i < 28; i++) {
+    const b = document.createElement('span');
+    b.textContent = bits[i % bits.length];
+    b.style.left = (Math.random() * 100) + '%';
+    b.style.animationDelay = (Math.random() * 0.3) + 's';
+    b.style.animationDuration = (1.2 + Math.random() * 0.9) + 's';
+    b.style.fontSize = (14 + Math.random() * 14) + 'px';
+    box.appendChild(b);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 2600);
+}
+// Pokémon energy types -> colour + icon (used for the card tiles)
+const TYPE_STYLE = {
+  Grass: ['#4caf50', '🌿'], Fire: ['#f4511e', '🔥'], Water: ['#1e88e5', '💧'], Lightning: ['#fbc02d', '⚡'],
+  Psychic: ['#ab47bc', '🔮'], Fighting: ['#a1572c', '👊'], Darkness: ['#37474f', '🌙'], Metal: ['#78909c', '⚙️'],
+  Dragon: ['#c9a227', '🐉'], Fairy: ['#ec407a', '✨'], Colorless: ['#9e9e9e', '⭐'],
+};
+// tcgdex uses the same English type names
+const typeStyle = (card) => TYPE_STYLE[(card.types || [])[0]] || null;
+function rarityMark(r) {
+  r = String(r || '').toLowerCase();
+  if (!r) return '';
+  if (/hyper|gold|secret|rainbow/.test(r)) return '👑';
+  if (/special illustration|ultra|double rare|vmax|vstar|\bex\b|\bgx\b|\bv\b/.test(r)) return '★★';
+  if (/illustration|holo|rare/.test(r)) return '★';
+  if (/uncommon/.test(r)) return '◆◆';
+  return '◆';
+}
+
 // Photos are stored as data: URLs. Putting hundreds of them straight into the HTML is slow,
 // so each one is turned into a short blob: URL once and reused.
 const photoUrlCache = new Map();
@@ -2199,7 +2301,7 @@ async function renderCollection() {
   const value = items.reduce((s, it) => s + itemValue(it), 0);
   $('#statCount').textContent = total;
   $('#statUnique').textContent = new Set(items.map(it => it.card.id)).size;
-  $('#statValue').textContent = fmtILS(value);
+  countUp($('#statValue'), value);
   $('#collEmpty').hidden = items.length > 0;
   $('#collFooter').hidden = items.length === 0;
   recordHistory(value, total);
@@ -2223,10 +2325,14 @@ async function renderCollection() {
     const e = estimate(it.card, it.variant, it.condition);
     const img = photoSrc(it.photo) || it.card.img || '';
     const shiny = /holo/i.test(it.variant) || /holo|ultra|secret|illustration|hyper|rainbow|ex\b|vmax|vstar/i.test(it.card.rarity || '');
-    return `<div class="tile ${shiny ? 'shiny' : ''}" data-uid="${esc(it.uid)}">
+    const ts = typeStyle(it.card);
+    const mark = rarityMark(it.card.rarity);
+    return `<div class="tile ${shiny ? 'shiny' : ''}" data-uid="${esc(it.uid)}" ${ts ? `style="--type:${ts[0]}"` : ''}>
       ${it.qty > 1 ? `<span class="qty">×${it.qty}</span>` : ''}
-      <img class="img" src="${esc(img)}" alt="" loading="lazy" decoding="async">
+      ${mark ? `<span class="rarity" title="${esc(it.card.rarity)}">${mark}</span>` : ''}
+      <div class="img-wrap"><img class="img" src="${esc(img)}" alt="" loading="lazy" decoding="async"></div>
       <div class="info">
+        ${ts ? `<span class="type-dot" aria-hidden="true">${ts[1]}</span>` : ''}
         <div class="name" dir="ltr" style="text-align:right">${esc(it.card.name)}</div>
         <div class="set">${esc(it.card.setName)} #${esc(it.card.number)}</div>
         <div class="val">${e.ils != null ? fmtILS(e.ils) : '—'}</div>
@@ -3222,7 +3328,7 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 /* =====================================================================
    Boot
    ===================================================================== */
-const APP_VERSION = '2026.10.21-6';
+const APP_VERSION = '2026.10.21-7';
 window.addEventListener('error', (e) => { if (e.message) toast('⚠️ שגיאה: ' + e.message, 6000); });
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason && (e.reason.message || String(e.reason)); if (m && !/abort/i.test(m)) toast('⚠️ שגיאה: ' + m, 6000); });
 $('#appVersion').textContent = 'גרסה ' + APP_VERSION;

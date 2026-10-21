@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
+  color-scheme: dark;
   --bg: #2b1408;
   --panel: #2f170b;
   --panel-2: #1f0e06;
@@ -187,6 +188,9 @@ button { font-family: inherit; cursor: pointer; border: 0; color: inherit; }
 @keyframes panelIn { from { transform: scale(.85) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes countPop { 0% { transform: scale(2.2); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 75% { opacity: 1; } 100% { transform: scale(.8); opacity: 0; } }
 @keyframes banner { 0% { transform: scale(.4); opacity: 0; } 15% { transform: scale(1.1); opacity: 1; } 25% { transform: scale(1); } 80% { opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .btn.big, .title .slice, .record, .timer.low { animation: none; }
+}
 @media (max-height: 640px) {
   .title { font-size: 40px; }
   .howto { margin-top: 10px; padding-top: 10px; }
@@ -1356,9 +1360,11 @@ $('shareBtn').addEventListener('click', async () => {
   const text = `השגתי ${G.score} נקודות בפיצה מאניה! 🍕 נסו לשבור את השיא שלי`;
   try {
     if (navigator.share) { await navigator.share({ title: 'פיצה מאניה', text, url: location.href }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try {
     await navigator.clipboard.writeText(text + '\n' + location.href);
     toast('הועתק – אפשר להדביק ולשלוח 📋');
-  } catch (e) { /* share cancelled */ }
+  } catch (e) { toast(text); }
 });
 
 function syncToggles() {

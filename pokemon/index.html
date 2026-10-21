@@ -1140,98 +1140,147 @@ function warpCard(srcCanvas, quad, W = CARD_W, H = CARD_H) {
   return out;
 }
 
-/* ---- OpenCV.js (lazy) for automatic card edge detection ---- */
-const OPENCV_URLS = [
-  'https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js',
-  'https://docs.opencv.org/4.10.0/opencv.js',
-];
-let cvPromise = null;
-function loadOpenCV() {
-  if (cvPromise) return cvPromise;
-  cvPromise = (async () => {
-    for (const url of OPENCV_URLS) {
-      try {
-        await loadScript(url, 60000);
-        return await new Promise((resolve, reject) => {
-          const started = Date.now();
-          let resolved = false;
-          const done = (m) => { if (!resolved && m && m.Mat) { resolved = true; window.cv = m; resolve(m); } };
-          if (window.cv && typeof window.cv.then === 'function' && window.cv instanceof Promise) window.cv.then(done);
-          const iv = setInterval(() => {
-            if (window.cv && window.cv.Mat) { clearInterval(iv); done(window.cv); }
-            else if (Date.now() - started > 45000) { clearInterval(iv); if (!resolved) reject(new Error('cv init timeout')); }
-          }, 150);
-        });
-      } catch (e) {
-        console.warn('OpenCV load failed from', url, e);
+/* ---- Automatic card edge detection (pure JS – nothing to download) ----
+   1. shrink the photo and find strong colour edges (Sobel on R, G, B);
+   2. scanning in from each side, collect edge points whose direction matches that side;
+   3. fit one straight line per side (RANSAC – the line that covers the most scan lines wins,
+      so wavy background texture loses to the card's straight border);
+   4. the 4 line intersections are the card corners. */
+function detectCardQuad(canvas) {
+  const scale = Math.min(1, 320 / Math.max(canvas.width, canvas.height));
+  const W = Math.max(8, Math.round(canvas.width * scale)), H = Math.max(8, Math.round(canvas.height * scale));
+  const sc = document.createElement('canvas');
+  sc.width = W; sc.height = H;
+  const sctx = sc.getContext('2d');
+  sctx.filter = 'blur(1px)';
+  sctx.drawImage(canvas, 0, 0, W, H);
+  const px = sctx.getImageData(0, 0, W, H).data;
+
+  const mag = new Float32Array(W * H), gxs = new Float32Array(W * H), gys = new Float32Array(W * H);
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      let best = 0, bx = 0, by = 0;
+      for (let c = 0; c < 3; c++) {
+        const p = (yy, xx) => px[(yy * W + xx) * 4 + c];
+        const gx = p(y - 1, x + 1) + 2 * p(y, x + 1) + p(y + 1, x + 1) - p(y - 1, x - 1) - 2 * p(y, x - 1) - p(y + 1, x - 1);
+        const gy = p(y + 1, x - 1) + 2 * p(y + 1, x) + p(y + 1, x + 1) - p(y - 1, x - 1) - 2 * p(y - 1, x) - p(y - 1, x + 1);
+        const m = gx * gx + gy * gy;
+        if (m > best) { best = m; bx = gx; by = gy; }
+      }
+      const i = y * W + x;
+      mag[i] = Math.sqrt(best); gxs[i] = bx; gys[i] = by;
+    }
+  }
+  const sorted = Array.from(mag).filter(v => v > 0).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const thr = Math.max(40, sorted[Math.floor(sorted.length * 0.8)]);
+
+  // Collect candidate edge points for one side. horiz = top/bottom border (edge runs along x).
+  const collect = (horiz, fromStart) => {
+    const pts = [];
+    const along = horiz ? W : H, across = horiz ? H : W;
+    for (let a = Math.floor(along * 0.04); a < along * 0.96; a++) {
+      const lim = Math.floor(across * 0.6);
+      for (let k = 1; k < lim; k++) {
+        const b = fromStart ? k : across - 1 - k;
+        const x = horiz ? a : b, y = horiz ? b : a;
+        const i = y * W + x;
+        const m = mag[i];
+        if (m < thr) continue;
+        const g1 = Math.abs(horiz ? gys[i] : gxs[i]), g2 = Math.abs(horiz ? gxs[i] : gys[i]);
+        if (g1 < g2 * 1.2) continue; // edge direction must match this side
+        const prev = horiz ? mag[i - W] : mag[i - 1], next = horiz ? mag[i + W] : mag[i + 1];
+        if (m >= prev && m >= next) pts.push({ x, y, a });
       }
     }
-    throw new Error('OpenCV unavailable');
-  })();
-  cvPromise.catch(() => { cvPromise = null; });
-  return cvPromise;
-}
+    return pts;
+  };
 
-async function detectCardQuad(canvas) {
-  const cv = await loadOpenCV();
-  const scale = Math.min(1, 800 / Math.max(canvas.width, canvas.height));
-  const small = document.createElement('canvas');
-  small.width = Math.round(canvas.width * scale);
-  small.height = Math.round(canvas.height * scale);
-  small.getContext('2d').drawImage(canvas, 0, 0, small.width, small.height);
-  const area = small.width * small.height;
-  const mats = [];
-  const keep = (m) => { mats.push(m); return m; };
-  try {
-    const src = keep(cv.imread(small));
-    const gray = keep(new cv.Mat());
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    const blur = keep(new cv.Mat());
-    cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
-
-    const tryEdges = (makeEdges) => {
-      const edges = keep(new cv.Mat());
-      makeEdges(edges);
-      const kernel = keep(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5)));
-      cv.morphologyEx(edges, edges, cv.MORPH_CLOSE, kernel);
-      const contours = keep(new cv.MatVector());
-      const hier = keep(new cv.Mat());
-      cv.findContours(edges, contours, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-      let best = null, bestArea = 0, fallback = null, fallbackArea = 0;
-      for (let i = 0; i < contours.size(); i++) {
-        const c = contours.get(i);
-        const a = cv.contourArea(c);
-        if (a < area * 0.12 || a > area * 0.98) { c.delete(); continue; }
-        const peri = cv.arcLength(c, true);
-        const approx = new cv.Mat();
-        cv.approxPolyDP(c, approx, 0.02 * peri, true);
-        if (approx.rows === 4 && cv.isContourConvex(approx) && a > bestArea) {
-          const pts = [];
-          for (let k = 0; k < 4; k++) pts.push({ x: approx.data32S[k * 2], y: approx.data32S[k * 2 + 1] });
-          const q = orderCorners(pts);
-          const ratio = ((dist(q[0], q[1]) + dist(q[3], q[2])) / 2) / ((dist(q[0], q[3]) + dist(q[1], q[2])) / 2);
-          if (ratio > 0.5 && ratio < 0.95) { best = q; bestArea = a; }
-        } else if (a > fallbackArea) {
-          const rect = cv.minAreaRect(c);
-          const pts = cv.RotatedRect.points(rect);
-          fallback = orderCorners(pts.map(p => ({ x: p.x, y: p.y })));
-          fallbackArea = a;
-        }
-        approx.delete(); c.delete();
+  // Hough transform: candidate straight lines for one side (votes = edge points on the line).
+  const fitLines = (pts, horiz) => {
+    if (pts.length < 10) return [];
+    const span = horiz ? W : H, diag = Math.ceil(Math.hypot(W, H));
+    const angles = [];
+    for (let d = -35; d <= 35; d++) angles.push(d * Math.PI / 180);
+    // line normal for a top/bottom edge points roughly along y, for left/right along x
+    const normals = angles.map(t => horiz ? { nx: -Math.sin(t), ny: Math.cos(t) } : { nx: Math.cos(t), ny: Math.sin(t) });
+    const R = 2 * diag + 1;
+    const votes = new Int32Array(angles.length * R);
+    for (const p of pts) {
+      for (let k = 0; k < normals.length; k++) {
+        const rho = Math.round(normals[k].nx * p.x + normals[k].ny * p.y) + diag;
+        votes[k * R + rho]++;
       }
-      return best || fallback;
-    };
+    }
+    const cands = [];
+    for (let i = 0; i < votes.length; i++) if (votes[i] >= span * 0.12) cands.push(i);
+    cands.sort((x, y) => votes[y] - votes[x]);
+    const out = [];
+    for (const i of cands) {
+      const k = Math.floor(i / R), rho = (i % R) - diag;
+      if (out.some(o => Math.abs(o.k - k) <= 3 && Math.abs(o.rho - rho) <= 5)) continue;
+      out.push({ k, rho });
+      if (out.length >= 10) break;
+    }
+    return out.map(({ k, rho }) => {
+      let { nx, ny } = normals[k], c = -rho;
+      // refine with least squares on the points close to the line
+      const inl = pts.filter(r => Math.abs(nx * r.x + ny * r.y + c) < 2);
+      if (inl.length >= 5) {
+        const n = inl.length;
+        const mx = inl.reduce((sum, r) => sum + r.x, 0) / n, my = inl.reduce((sum, r) => sum + r.y, 0) / n;
+        let sxx = 0, syy = 0, sxy = 0;
+        for (const r of inl) { sxx += (r.x - mx) ** 2; syy += (r.y - my) ** 2; sxy += (r.x - mx) * (r.y - my); }
+        const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+        nx = -Math.sin(ang); ny = Math.cos(ang); c = -(nx * mx + ny * my);
+      }
+      return { nx, ny, c };
+    });
+  };
 
-    let quad = tryEdges((e) => cv.Canny(blur, e, 40, 120));
-    if (!quad) quad = tryEdges((e) => cv.threshold(blur, e, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU));
-    if (!quad) return null;
-    return quad.map(p => ({
-      x: Math.max(0, Math.min(canvas.width - 1, p.x / scale)),
-      y: Math.max(0, Math.min(canvas.height - 1, p.y / scale)),
-    }));
-  } finally {
-    mats.forEach(m => { try { m.delete(); } catch (e) {} });
+  const cross = (l1, l2) => {
+    const det = l1.nx * l2.ny - l2.nx * l1.ny;
+    if (Math.abs(det) < 1e-6) return null;
+    return { x: (l1.ny * l2.c - l2.ny * l1.c) / det, y: (l2.nx * l1.c - l1.nx * l2.c) / det };
+  };
+  // How much of the segment a->b really lies on a strong edge (0..1).
+  const support = (a, b) => {
+    const N = 60, len = dist(a, b) || 1;
+    const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+    let hit = 0;
+    for (let k = 0; k < N; k++) {
+      const t = (k + 0.5) / N;
+      const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+      for (const o of [0, -1, 1, -2, 2]) {
+        const xi = Math.round(x + nx * o), yi = Math.round(y + ny * o);
+        if (xi > 0 && yi > 0 && xi < W - 1 && yi < H - 1 && mag[yi * W + xi] >= thr * 0.6) { hit++; break; }
+      }
+    }
+    return hit / N;
+  };
+
+  const T = fitLines(collect(true, true), true), B = fitLines(collect(true, false), true);
+  const Lf = fitLines(collect(false, true), false), R = fitLines(collect(false, false), false);
+  let best = null;
+  for (const t of T) for (const bt of B) for (const l of Lf) for (const r of R) {
+    const pts = [cross(t, l), cross(t, r), cross(bt, r), cross(bt, l)];
+    if (pts.some(p => !p || p.x < -W * 0.05 || p.y < -H * 0.05 || p.x > W * 1.05 || p.y > H * 1.05)) continue;
+    const w = (dist(pts[0], pts[1]) + dist(pts[3], pts[2])) / 2, h = (dist(pts[0], pts[3]) + dist(pts[1], pts[2])) / 2;
+    if (w * h < W * H * 0.1) continue;
+    const ratio = Math.min(w, h) / Math.max(w, h);
+    if (ratio < 0.55 || ratio > 0.9) continue;
+    const sup = [support(pts[0], pts[1]), support(pts[1], pts[2]), support(pts[2], pts[3]), support(pts[3], pts[0])];
+    if (Math.min(...sup) < 0.45) continue;
+    const shape = 1 - Math.min(1, Math.abs(ratio - 63 / 88) * 4);  // card is 63 x 88 mm
+    const score = sup.reduce((s2, v) => s2 + v, 0) + shape + 0.3 * (w * h) / (W * H);
+    if (!best || score > best.score) best = { score, pts };
   }
+  if (!best) return null;
+  const q = orderCorners(best.pts);
+  return q.map(p => ({
+    x: Math.max(0, Math.min(canvas.width - 1, p.x / scale)),
+    y: Math.max(0, Math.min(canvas.height - 1, p.y / scale)),
+  }));
 }
 
 /* =====================================================================
@@ -1240,10 +1289,13 @@ async function detectCardQuad(canvas) {
 let ocrWorkerP = null;
 function getOcrWorker() {
   if (ocrWorkerP) return ocrWorkerP;
-  ocrWorkerP = (async () => {
-    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 60000);
-    return await window.Tesseract.createWorker('eng', 1);
-  })();
+  ocrWorkerP = Promise.race([
+    (async () => {
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 40000);
+      return await window.Tesseract.createWorker('eng', 1);
+    })(),
+    sleep(45000).then(() => { throw new Error('OCR load timeout'); }),
+  ]);
   ocrWorkerP.catch(() => { ocrWorkerP = null; });
   return ocrWorkerP;
 }
@@ -1610,14 +1662,16 @@ function beginAdjust(canvas, initialQuad) {
   const note = $('#detectNote');
   note.innerHTML = '<span style="display:inline-flex;gap:6px;align-items:center"><span class="spinner"></span> מחפש את הקצוות של הקלף...</span>';
   const token = cap.srcCanvas;
-  detectCardQuad(canvas).then(q => {
+  cap.userMoved = false;
+  // let the screen paint first, then detect (fast, runs locally)
+  setTimeout(() => {
     if (cap.srcCanvas !== token) return;
+    let q = null;
+    try { q = detectCardQuad(canvas); } catch (e) { console.warn('detect', e); }
+    if (cap.userMoved) { note.textContent = ''; return; }
     if (q) { cap.quad = q; drawQuad(); note.textContent = '✨ מצאתי את הקלף! אפשר לתקן את הנקודות אם צריך.'; }
-    else note.textContent = 'לא מצאתי את הקצוות אוטומטית – גרור את הנקודות לפינות הקלף.';
-  }).catch(() => {
-    if (cap.srcCanvas !== token) return;
-    note.textContent = 'גרור את הנקודות לפינות הקלף.';
-  });
+    else note.textContent = 'גרור את 4 הנקודות לפינות הקלף ולחץ "המשך".';
+  }, 50);
 }
 
 function drawQuad() {
@@ -1652,6 +1706,7 @@ function drawQuad() {
     const r = svg.getBoundingClientRect();
     if (bd / cap.srcCanvas.width * r.width > 60) return;
     drag = best;
+    cap.userMoved = true;
     svg.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
@@ -1725,9 +1780,9 @@ async function identify() {
   }
   if (cap.cardCanvas !== token) return;
   if (!parsed || (!parsed.name && !parsed.number)) {
-    const st = status('קורא את הטקסט על הקלף (פעם ראשונה לוקח קצת זמן)...');
+    const st = status('קורא את הטקסט על הקלף (בפעם הראשונה זה לוקח קצת זמן)...');
     try {
-      parsed = await ocrCard(cap.cardCanvas);
+      parsed = await Promise.race([ocrCard(cap.cardCanvas), sleep(70000).then(() => { throw new Error('OCR timeout'); })]);
       const bits = [parsed.name, parsed.number && ('#' + parsed.number + (parsed.total ? '/' + parsed.total : ''))].filter(Boolean).join(' ');
       st.done(bits ? `קראתי: ${bits}` : 'לא הצלחתי לקרוא את השם – אפשר להקליד למטה', !!bits);
     } catch (e) {
@@ -2338,11 +2393,42 @@ function validateProfile(name, phone) {
   if (!normalizePhone(phone)) return 'מספר הטלפון לא תקין (לדוגמה 050-1234567)';
   return '';
 }
-function saveProfile(name, phone) {
+function saveProfile(name, phone, consent) {
   const prev = getProfile() || {};
-  lsSet('nitai-profile', { ...prev, name: name.trim(), phone: normalizePhone(phone), registeredAt: prev.registeredAt || Date.now() });
+  lsSet('nitai-profile', {
+    ...prev,
+    id: prev.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
+    name: name.trim(), phone: normalizePhone(phone),
+    consent: consent === undefined ? prev.consent : consent,
+    registeredAt: prev.registeredAt || Date.now(),
+    sentToSheet: false,
+  });
   applyProfile();
   onDbChange();
+  sendSignup();
+}
+
+/* ---- Central sign-up list (Google Sheet via an Apps Script web app) ----
+   The script lives in the admin's Google account (see google-apps-script.gs in this folder).
+   Paste its "/exec" web-app URL here to turn the central list on. */
+const SIGNUP_ENDPOINT = '';
+async function sendSignup() {
+  const pr = getProfile();
+  if (!SIGNUP_ENDPOINT || !pr || !pr.consent || pr.sentToSheet || !navigator.onLine) return;
+  try {
+    // text/plain + no-cors: a "simple" request that Apps Script accepts without a CORS preflight
+    await fetch(SIGNUP_ENDPOINT, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        id: pr.id, name: pr.name, phone: pr.phone, consent: !!pr.consent, registeredAt: pr.registeredAt,
+        device: /iphone|ipad/i.test(navigator.userAgent) ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'אחר',
+      }),
+    });
+    const cur = getProfile();
+    if (cur && cur.id === pr.id && cur.name === pr.name && cur.phone === pr.phone) lsSet('nitai-profile', { ...cur, sentToSheet: true });
+  } catch (e) {
+    console.warn('signup send failed, will retry', e);
+  }
 }
 function applyProfile() {
   const pr = getProfile();
@@ -2352,6 +2438,7 @@ function applyProfile() {
 }
 
 function showWelcome() {
+  const prev = getProfile() || {};
   const w = document.createElement('div');
   w.className = 'welcome';
   w.innerHTML = `<div class="box">
@@ -2360,12 +2447,19 @@ function showWelcome() {
     <p class="muted">האפליקציה לאוסף קלפי פוקימון: מצלמים קלף, רואים כמה הוא שווה ובודקים טריידים.</p>
     <form id="welcomeForm" novalidate>
       <label class="field" for="wName">איך קוראים לך?</label>
-      <input type="text" id="wName" autocomplete="name" placeholder="השם שלך" required>
+      <input type="text" id="wName" autocomplete="name" placeholder="השם שלך" required value="${esc(prev.name || '')}">
       <label class="field" for="wPhone" style="margin-top:12px">מספר טלפון</label>
-      <input type="tel" id="wPhone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="050-1234567" required>
+      <input type="tel" id="wPhone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="050-1234567" required value="${esc(prev.phone || '')}">
+      <p class="muted" style="font-size:.78rem;margin-top:10px;line-height:1.5">
+        🔒 השם והטלפון נשלחים לרשימת המשתמשים של מנהל האפליקציה, כדי לדעת מי משתמש בה וליצור קשר במידת הצורך.
+        הם לא מתפרסמים ולא מועברים לאף אחד אחר.
+      </p>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:.88rem;cursor:pointer">
+        <input type="checkbox" id="wConsent" style="width:20px;height:20px;flex:none;margin-top:2px">
+        <span>אני מסכים/ה לשליחת הפרטים, <b>ואם אני מתחת לגיל 18 – הורה אישר לי</b></span>
+      </label>
       <div class="err" id="wErr"></div>
       <button class="btn btn-red btn-block" type="submit" style="margin-top:8px">🚀 בואו נתחיל!</button>
-      <p class="muted" style="font-size:.75rem;margin-top:10px;text-align:center">הפרטים נשמרים רק בטלפון שלך.</p>
     </form>
   </div>`;
   document.body.appendChild(w);
@@ -2373,10 +2467,10 @@ function showWelcome() {
   $('#welcomeForm', w).addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('#wName', w).value, phone = $('#wPhone', w).value;
-    const err = validateProfile(name, phone);
+    const err = validateProfile(name, phone) || ($('#wConsent', w).checked ? '' : 'צריך לסמן את האישור כדי להמשיך');
     $('#wErr', w).textContent = err;
     if (err) return;
-    saveProfile(name, phone);
+    saveProfile(name, phone, true);
     w.remove();
     toast(`שלום ${name.trim()}! 👋 בוא נתחיל לאסוף`);
   });
@@ -2914,7 +3008,9 @@ $('#btnCloudRestore').addEventListener('click', async () => {
 renderRatesInfo();
 refreshRates().then(() => { if (currentView === 'collection') renderCollection(); });
 applyProfile();
-if (!getProfile()) showWelcome();
+if (!getProfile() || !getProfile().consent) showWelcome();
+else sendSignup();
+window.addEventListener('online', () => sendSignup());
 renderCollection();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 setTimeout(() => autoRefreshPrices().catch(() => {}), 5000);

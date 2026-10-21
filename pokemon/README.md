@@ -14,7 +14,7 @@
 | [Pokémon TCG API](https://pokemontcg.io) | מאגר הקלפים, תמונות רשמיות, מחירי TCGplayer ($) ו-Cardmarket (€) |
 | [TCGdex](https://tcgdex.dev) | מאגר גיבוי עם מחירים, אם הראשי לא זמין |
 | [ExchangeRate-API](https://www.exchangerate-api.com) | שער דולר/אירו לשקל |
-| OpenCV.js | זיהוי הקצוות של הקלף בתמונה |
+| זיהוי קצוות מובנה (בלי הורדות) | מציאת הקלף בתמונה ויישור שלו |
 | Tesseract.js | קריאת הטקסט על הקלף |
 | Claude API (אופציונלי) | זיהוי חכם ומדויק יותר, עם מפתח API שמוכנס בהגדרות |
 

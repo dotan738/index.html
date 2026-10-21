@@ -16,7 +16,7 @@ const API = process.env.API_BASE || 'https://api.pokemontcg.io/v2';
 const headers = process.env.POKEMONTCG_API_KEY ? { 'X-Api-Key': process.env.POKEMONTCG_API_KEY } : {};
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function getJSON(url, tries = 6) {
+async function getJSON(url, tries = 8) {
   for (let i = 1; ; i++) {
     try {
       const res = await fetch(url, { headers, signal: AbortSignal.timeout(90000) });
@@ -25,7 +25,7 @@ async function getJSON(url, tries = 6) {
     } catch (e) {
       if (i >= tries) throw new Error(`${url}: ${e.message}`);
       console.log(`  retry ${i} ${url} (${e.message})`);
-      await sleep(2000 * i);
+      await sleep(Math.min(30000, 3000 * i)); // the API is flaky (500/502) – back off and retry
     }
   }
 }
@@ -62,13 +62,29 @@ const setIndex = new Map(sets.map((s, i) => [s.id, i]));
 console.log(`  ${sets.length} sets`);
 
 console.log('Fetching cards...');
+const SELECT = 'id,name,number,rarity,types,supertype,set,images,tcgplayer,cardmarket';
+const PAGE = 100; // big pages with prices often fail with HTTP 500 on this API
+const cardsPage = (page, size) => getJSON(`${API}/cards?page=${page}&pageSize=${size}&orderBy=id&select=${SELECT}`);
 const cards = [];
+const seenIds = new Set();
 let expected = 0, seen = 0;
 for (let page = 1; ; page++) {
-  const d = await getJSON(`${API}/cards?page=${page}&pageSize=250&orderBy=set.releaseDate,number&select=id,name,number,rarity,types,supertype,set,images,tcgplayer,cardmarket`);
-  expected = d.totalCount || expected;
-  seen += d.data.length;
-  for (const c of d.data) {
+  let data, total;
+  try {
+    const d = await cardsPage(page, PAGE);
+    data = d.data; total = d.totalCount;
+  } catch (e) {
+    // a page that keeps failing: ask for it in two halves
+    console.log(`\n  page ${page} failed, trying it in halves`);
+    const a = await cardsPage(page * 2 - 1, PAGE / 2);
+    const b = await cardsPage(page * 2, PAGE / 2);
+    data = [...a.data, ...b.data]; total = a.totalCount || b.totalCount;
+  }
+  expected = total || expected;
+  seen += data.length;
+  for (const c of data) {
+    if (seenIds.has(c.id)) continue;
+    seenIds.add(c.id);
     if (!c.images || !c.images.small || !setIndex.has(c.set.id)) continue;
     // price snapshot: best TCGplayer market price (USD) and Cardmarket trend (EUR)
     let usd = 0;
@@ -78,9 +94,10 @@ for (let page = 1; ; page++) {
       type: (c.types && c.types[0]) || (c.supertype === 'Trainer' ? 'Trainer' : c.supertype === 'Energy' ? 'Energy' : ''), img: c.images.small, usd, eur });
   }
   process.stdout.write(`\r  page ${page}: ${cards.length} cards`);
-  if (!d.data.length || (expected && seen >= expected) || (!expected && d.data.length < 250)) break;
-  await sleep(150);
+  if (!data.length || (expected && seen >= expected) || (!expected && data.length < PAGE)) break;
+  await sleep(300);
 }
+cards.sort((x, y) => String(sets[x.set].date).localeCompare(String(sets[y.set].date)) || (parseInt(x.number, 10) || 0) - (parseInt(y.number, 10) || 0));
 console.log('');
 // Never replace a good database with a partial one (API hiccup / outage): stop without writing.
 if (expected && seen < expected * 0.98) { console.error(`ABORT: got ${seen} of ${expected} cards`); process.exit(1); }
